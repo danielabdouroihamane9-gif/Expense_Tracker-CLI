@@ -1,0 +1,42 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environment
+.venv/
+
+# VSCode workspace settings
+.vscode/*.code-workspace
+.vscode/settings.json
+
+# Environment and local configuration
+.env
+*.env
+
+# Pytest cache
+.pytest_cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data files
+expenses.json
+budgets.json
+
+# Exports
+*.csv
+
+# archive files
+*.zip
+.archive/
+
+AI extension logs and local cache
+.continue/
