@@ -24,7 +24,7 @@ class Menu:
     def run(self):
         """Run the main interactive menu loop."""
         print("\n" + "=" * 60)
-        print("   Expense Tracker CLI - Phase 1")
+        print("   Expense Tracker CLI - Manage Your Finances with Ease")
         print("=" * 60)
 
         while True:
