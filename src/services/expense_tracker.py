@@ -72,7 +72,8 @@ class ExpenseTrackerService:
         """
         if year is None or month is None:
             today = datetime.now().date()
-            year, month = today.year, today.month
+            year = today.year if year is None else year
+            month = today.month if month is None else month
 
         summary = {cat: 0.0 for cat in VALID_CATEGORIES}
 
@@ -82,17 +83,18 @@ class ExpenseTrackerService:
 
         return {cat: total for cat, total in summary.items() if total > 0}
 
-    def delete_expense(self, index):
-        """Delete an expense by index.
+    def delete_expense(self, expense):
+        """
+        Delete an expense object.
 
         Args:
-            index (int): Index of expense to delete
+            expense (Expense): Expense instance to delete.
 
         Returns:
-            bool: True if deleted, False if index invalid
+            bool: True if deleted successfully, False otherwise.
         """
-        if 0 <= index < len(self.expenses):
-            self.expenses.pop(index)
+        if expense in self.expenses:
+            self.expenses.remove(expense)
             self.storage.save_expenses(self.expenses)
             return True
         return False
@@ -104,3 +106,14 @@ class ExpenseTrackerService:
             int: Number of expenses
         """
         return len(self.expenses)
+
+    def clear_all_expenses(self):
+        """
+        Remove all expenses from the tracker.
+
+        Returns:
+            bool: True when completed successfully.
+        """
+        self.expenses.clear()
+        self.storage.save_expenses(self.expenses)
+        return True
