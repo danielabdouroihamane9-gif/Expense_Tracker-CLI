@@ -18,12 +18,12 @@ def display_expenses_table(expenses, title="Expenses"):
         return
 
     print(f"\n{title}:")
-    print(f"{'Date':<12} {'Amount':<10} {'Category':<15} {'Description':<30}")
+    print(f"{'No':<4} {'Date':<12} {'Amount':<10} {'Category':<15} {'Description':<30}")
     print("-" * 67)
 
-    for expense in expenses:
+    for index, expense in enumerate(expenses, start=1):
         print(
-            f"{str(expense.date):<12} ${expense.amount:<9.2f} {expense.category:<15} {expense.description:<30}"
+            f"{index:<4} {str(expense.date):<12} ${expense.amount:<9.2f} {expense.category:<15} {expense.description:<30}"
         )
     print()
 
