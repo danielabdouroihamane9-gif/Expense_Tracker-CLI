@@ -1,5 +1,6 @@
 """Main menu for CLI."""
 
+from ast import keyword
 from datetime import datetime
 from src.services import ExpenseTrackerService, BudgetService, ExportService
 from src.utils import (
@@ -336,13 +337,7 @@ class Menu:
 
         print("\n--- Search Expenses ---")
 
-        keyword = input(
-            "Enter search keyword: "
-        ).strip()
-
-        if not keyword:
-            print("✗ Search keyword cannot be empty.")
-            return
+        keyword = self.commands.get_user_keyword()
 
         expenses = self.expense_service.search_expenses(keyword)
 
