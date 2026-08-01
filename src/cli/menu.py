@@ -128,16 +128,19 @@ class Menu:
         while True:
             print("\nReports:")
             print("1. Monthly Summary")
+            print("2. Spending by Category")
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-1): ").strip()
+            choice = input("\nEnter your choice (0-2): ").strip()
 
             if choice == "1":
                 self._monthly_summary()
+            elif choice == "2":
+                self._spending_by_category()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-1.")
+                print("✗ Invalid choice. Enter 0-2.")
 
     def _export_menu(self):
         """Export submenu."""
@@ -434,6 +437,37 @@ class Menu:
         # 3. Fetch and display data using the user's selected dates
         summary = self.expense_service.get_monthly_summary(year, month)
         display_summary(summary, year, month)
+
+    def _spending_by_category(self):
+        """
+        Display total spending grouped by category.
+        """
+
+        print("\n--- Spending by Category ---")
+
+        spending = (
+            self.expense_service.get_spending_by_category()
+        )
+
+        if not spending:
+            print("\nNo expenses found.\n")
+            return
+
+        print("-" * 35)
+        print(f"{'Category':<20}{'Total'}")
+        print("-" * 35)
+
+        grand_total = 0
+
+        for category, total in spending.items():
+            print(
+                f"{category.title():<20}"
+                f"${total:.2f}"
+            )
+            grand_total += total
+
+        print("-" * 35)
+        print(f"{'Grand Total':<20}${grand_total:.2f}\n")
 
     def _set_budget(self):
         """Set a budget limit for a category."""
