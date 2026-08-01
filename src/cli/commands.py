@@ -103,3 +103,16 @@ class CommandHandler:
         """
         filename = input("Enter filename (or press Enter for auto-generated): ").strip()
         return filename if filename else None
+
+    @staticmethod
+    def get_user_keyword():
+        """Get search keyword from user.
+
+        Returns:
+            str: Search keyword
+        """
+        while True:
+            keyword = input("Enter search keyword: ").strip()
+            if keyword:
+                return keyword
+            print("✗ Keyword cannot be empty")
