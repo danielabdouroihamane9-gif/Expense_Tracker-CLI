@@ -62,9 +62,11 @@ class Menu:
             print("5. Filter by Category")
             print("6. Delete Expense")
             print("7. Clear All Expenses")
+            print("8. Search Expenses")
+
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-7): ").strip()
+            choice = input("\nEnter your choice (0-8): ").strip()
 
             if choice == "1":
                 self._add_expense()
@@ -80,10 +82,12 @@ class Menu:
                 self._delete_expense()
             elif choice == "7":
                 self._clear_all_expenses()
+            elif choice == "8":
+                self._search_expenses()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-7.")
+                print("✗ Invalid choice. Enter 0-8.")
 
     def _budget_menu(self):
         """Budget management submenu."""
@@ -324,6 +328,39 @@ class Menu:
         if expenses:
             total = sum(e.amount for e in expenses)
             print(f"Total: ${total:.2f}\n")
+
+    def _search_expenses(self):
+        """
+        Search expenses by keyword.
+        """
+
+        print("\n--- Search Expenses ---")
+
+        keyword = input(
+            "Enter search keyword: "
+        ).strip()
+
+        if not keyword:
+            print("✗ Search keyword cannot be empty.")
+            return
+
+        expenses = self.expense_service.search_expenses(keyword)
+
+        if not expenses:
+            print("\nNo matching expenses found.\n")
+            return
+
+        display_expenses_table(
+            expenses,
+            f"Search Results: {keyword}"
+        )
+
+        total = sum(
+            expense.amount
+            for expense in expenses
+        )
+
+        print(f"Total: ${total:.2f}\n")
 
     def _monthly_summary(self):
         """Display monthly summary based on user-requested year and month."""
