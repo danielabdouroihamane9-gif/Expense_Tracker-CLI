@@ -301,3 +301,22 @@ class ExpenseTrackerService:
             key=valid_fields[sort_by],
             reverse=reverse,
         )
+
+    def duplicate_expense(self, expense, new_date):
+        """
+        Duplicate an existing expense using a new date.
+        """
+
+        self.add_expense(
+            date=new_date,
+            category=expense.category,
+            amount=expense.amount,
+            description=expense.description,
+        )
+
+        return (
+            f"✓ Expense duplicated successfully: "
+            f"${expense.amount:.2f} "
+            f"({expense.category}) "
+            f"on {new_date}"
+        )
