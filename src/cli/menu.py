@@ -31,52 +31,55 @@ class Menu:
             print("\nMenu:")
             print("1. Add Expense")
             print("2. View All Expenses")
-            print("3. Filter by Category")
-            print("4. Monthly Summary")
-            print("5. Set Budget")
-            print("6. Budget Status")
-            print("7. View Budgets")
-            print("8. Delete Budget")
-            print("9. Clear All Budgets")
-            print("10. Delete Expense")
-            print("11. Clear All Expenses")
-            print("12. Export Expenses to CSV")
-            print("13. Export Summary to CSV")
+            print("3. View Expense Details")
+            print("4. Filter by Category")
+            print("5. Monthly Summary")
+            print("6. Set Budget")
+            print("7. Budget Status")
+            print("8. View Budgets")
+            print("9. Delete Budget")
+            print("10. Clear All Budgets")
+            print("11. Delete Expense")
+            print("12. Clear All Expenses")
+            print("13. Export Expenses to CSV")
+            print("14. Export Summary to CSV")
             print("0. Exit")
 
-            choice = input("\nEnter your choice (0-13): ").strip()
+            choice = input("\nEnter your choice (0-14): ").strip()
 
             if choice == "1":
                 self._add_expense()
             elif choice == "2":
                 self._view_all_expenses()
             elif choice == "3":
-                self._filter_by_category()
+                self._view_expense_details()
             elif choice == "4":
-                self._monthly_summary()
+                self._filter_by_category()
             elif choice == "5":
-                self._set_budget()
+                self._monthly_summary()
             elif choice == "6":
-                self._view_budget_status()
+                self._set_budget()
             elif choice == "7":
-                self._view_all_budgets()
+                self._view_budget_status()
             elif choice == "8":
-                self._delete_budget()
+                self._view_all_budgets()
             elif choice == "9":
-                self._clear_all_budgets()
+                self._delete_budget()
             elif choice == "10":
-                self._delete_expense()
+                self._clear_all_budgets()
             elif choice == "11":
-                self._clear_all_expenses()
+                self._delete_expense()
             elif choice == "12":
-                self._export_expenses()
+                self._clear_all_expenses()
             elif choice == "13":
-                self._export_summary()                
+                self._export_expenses()
+            elif choice == "14":
+                self._export_summary()
             elif choice == "0":
                 print("\n✓ Goodbye!\n")
                 break
             else:
-                print("✗ Invalid choice. Enter 0-13.")
+                print("✗ Invalid choice. Enter 0-14.")
 
     def _add_expense(self):
         """Add a new expense."""
@@ -135,6 +138,24 @@ class Menu:
                 continue
 
             return expenses[index - 1]
+
+    def _view_expense_details(self):
+        """Display detailed information about one expense."""
+
+        expense = self._select_expense()
+
+        if expense is None:
+            return
+
+        print("\nExpense Details")
+        print("-" * 30)
+
+        print(f"Date: {expense.date}")
+        print(f"Amount: ${expense.amount:.2f}")
+        print(f"Category: {expense.category}")
+        print(f"Description: {expense.description}")
+
+        print()
 
     def _delete_expense(self):
         """Delete an expense selected by the user."""
