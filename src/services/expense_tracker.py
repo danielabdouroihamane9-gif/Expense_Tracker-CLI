@@ -60,6 +60,32 @@ class ExpenseTrackerService:
             return []
         return [e for e in self.get_all_expenses() if e.category == category_lower]
 
+    def search_expenses(self, keyword):
+        """
+        Search expenses by description or category.
+
+        Args:
+            keyword (str): Search text.
+
+        Returns:
+            list: Matching expenses.
+        """
+
+        keyword = keyword.lower()
+
+        expenses = self.get_all_expenses()
+
+        results = []
+
+        for expense in expenses:
+            if (
+                keyword in expense.description.lower()
+                or keyword in expense.category.lower()
+            ):
+                results.append(expense)
+
+        return results
+
     def get_monthly_summary(self, year=None, month=None):
         """Get total spent per category for given month.
 
