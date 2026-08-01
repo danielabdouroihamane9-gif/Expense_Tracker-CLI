@@ -113,7 +113,14 @@ class BudgetService:
         return True
 
     def clear_all_budgets(self):
-        """Wipe out all stored budgets."""
+        """
+        Remove all budgets.
+
+        Returns:
+            bool: True when completed successfully.
+        """
+
         self.budgets.clear()
         self.storage.save_budgets(self.budgets)
-        return "✓ All budgets have been successfully cleared."
+
+        return True
