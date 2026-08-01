@@ -97,28 +97,31 @@ class Menu:
         while True:
             print("\nBudget Management:")
             print("1. Set Budget")
-            print("2. Budget Status")
-            print("3. View Budgets")
-            print("4. Delete Budget")
-            print("5. Clear All Budgets")
+            print("2. Edit Budget")
+            print("3. Budget Status")
+            print("4. View Budgets")
+            print("5. Delete Budget")
+            print("6. Clear All Budgets")
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-5): ").strip()
+            choice = input("\nEnter your choice (0-6): ").strip()
 
             if choice == "1":
                 self._set_budget()
             elif choice == "2":
-                self._view_budget_status()
+                self._edit_budget()
             elif choice == "3":
-                self._view_all_budgets()
+                self._view_budget_status()
             elif choice == "4":
-                self._delete_budget()
+                self._view_all_budgets()
             elif choice == "5":
+                self._delete_budget()
+            elif choice == "6":
                 self._clear_all_budgets()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-5.")
+                print("✗ Invalid choice. Enter 0-6.")
 
     def _reports_menu(self):
         """Reports submenu."""
@@ -441,62 +444,150 @@ class Menu:
         result = self.budget_service.set_budget(category, amount)
         print(result)
 
-    def _delete_budget(self):
-        """Delete an existing budget."""
+    def _edit_budget(self):
+        """
+        Edit an existing budget.
+        """
+
+        budget = self._select_budget()
+
+
+        if budget is None:
+            return
+
+
+        category, current_amount = budget
+
+
+        print(
+            f"\nEditing budget: "
+            f"{category.title()}"
+        )
+
+
+        print(
+            f"Current amount: "
+            f"${current_amount:.2f}"
+        )
+
+
+        new_amount = self.commands.get_budget_amount()
+
+
+        result = self.budget_service.set_budget(
+            category,
+            new_amount
+        )
+
+
+        print(result)
+
+    def _select_budget(self):
+        """
+        Display budgets and allow user selection.
+
+        Returns:
+            tuple:
+                (category, amount)
+            None:
+                if cancelled or no budgets exist
+        """
 
         budgets = self.budget_service.get_all_budgets()
 
         if not budgets:
             print("\nNo budgets have been set.\n")
-            return
+            return None
 
-        print("\nCurrent Budgets")
+
+        print("\nSelect Budget")
         print("-" * 35)
+
 
         categories = list(budgets.keys())
 
+
         for index, category in enumerate(categories, start=1):
             print(
-                f"{index}. {category.title():<15} "
+                f"{index}. "
+                f"{category.title():<15}"
                 f"${budgets[category]:.2f}"
             )
+
 
         while True:
 
             choice = input(
-                "\nEnter budget number to delete (0 to cancel): "
+                "\nEnter budget number (0 to cancel): "
             ).strip()
 
+
             if choice == "0":
-                print("Deletion cancelled.")
-                return
+                print("Operation cancelled.")
+                return None
+
 
             if not choice.isdigit():
-                print("✗ Please enter a valid number.")
+                print(
+                    "✗ Please enter a valid number."
+                )
                 continue
+
 
             index = int(choice)
 
+
             if index < 1 or index > len(categories):
-                print("✗ Invalid budget number.")
+                print(
+                    "✗ Invalid budget number."
+                )
                 continue
+
 
             category = categories[index - 1]
 
-            confirm = input(
-                f"Delete budget for '{category.title()}'? (y/n): "
-            ).strip().lower()
+            return (
+                category,
+                budgets[category]
+            )
 
-            if confirm != "y":
-                print("Deletion cancelled.")
-                return
+    def _delete_budget(self):
+        """
+        Delete an existing budget.
+        """
 
-            if self.budget_service.delete_budget(category):
-                print("✓ Budget deleted successfully.")
-            else:
-                print("✗ Budget could not be deleted.")
+        budget = self._select_budget()
 
+
+        if budget is None:
             return
+
+
+        category, amount = budget
+
+
+        confirm = input(
+            f"\nDelete budget for "
+            f"'{category.title()}' "
+            f"(${amount:.2f})? (y/n): "
+        ).strip().lower()
+
+
+        if confirm != "y":
+            print(
+                "Deletion cancelled."
+            )
+            return
+
+
+        if self.budget_service.delete_budget(category):
+            print(
+                "✓ Budget deleted successfully."
+            )
+        else:
+            print(
+                "✗ Budget could not be deleted."
+            )
 
     def _clear_all_budgets(self):
         """Clear all budgets after confirmation."""
