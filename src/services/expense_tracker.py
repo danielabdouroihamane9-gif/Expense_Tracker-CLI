@@ -248,8 +248,8 @@ class ExpenseTrackerService:
         Return expenses between two dates.
 
         Args:
-            start_date(date)
-            end_date(date)
+            start_date (date): Start date of the range
+            end_date (date): End date of the range
 
         Returns:
             list of expenses
@@ -265,3 +265,39 @@ class ExpenseTrackerService:
                 filtered.append(expense)
 
         return filtered
+
+    def get_sorted_expenses(self, sort_by, reverse=False):
+        """
+        Return expenses sorted by a given field.
+
+        Args:
+            sort_by (str):
+                "date"
+                "amount"
+                "category"
+                "description"
+
+            reverse (bool):
+                True for descending order.
+
+        Returns:
+            list
+        """
+
+        expenses = self.get_all_expenses()
+
+        valid_fields = {
+            "date": lambda expense: expense.date,
+            "amount": lambda expense: expense.amount,
+            "category": lambda expense: expense.category.lower(),
+            "description": lambda expense: expense.description.lower(),
+        }
+
+        if sort_by not in valid_fields:
+            return expenses
+
+        return sorted(
+            expenses,
+            key=valid_fields[sort_by],
+            reverse=reverse,
+        )
