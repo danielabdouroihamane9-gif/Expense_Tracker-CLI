@@ -136,6 +136,59 @@ class ExpenseTrackerService:
 
         return dict(sorted(spending.items()))
 
+    def get_expense_statistics(self):
+        """
+        Calculate summary statistics for all expenses.
+
+        Returns:
+            dict:
+                {
+                    "count": int,
+                    "total": float,
+                    "highest": Expense | None,
+                    "lowest": Expense | None,
+                    "average": float
+                }
+        """
+
+        expenses = self.get_all_expenses()
+
+        if not expenses:
+            return {
+                "count": 0,
+                "total": 0,
+                "highest": None,
+                "lowest": None,
+                "average": 0,
+            }
+
+        total = sum(expense.amount for expense in expenses)
+
+        highest = max(
+            expenses,
+            key=lambda expense: expense.amount
+        )
+
+        lowest = min(
+            expenses,
+            key=lambda expense: expense.amount
+        )
+
+        highest_index = expenses.index(highest) + 1
+        lowest_index = expenses.index(lowest) + 1
+
+        average = total / len(expenses)
+
+        return {
+            "count": len(expenses),
+            "total": total,
+            "highest": highest,
+            "highest_index": highest_index,
+            "lowest": lowest,
+            "lowest_index": lowest_index,
+            "average": average,
+        }
+
     def delete_expense(self, expense):
         """
         Delete an expense object.
