@@ -136,9 +136,11 @@ class Menu:
             print("1. Monthly Summary")
             print("2. Spending by Category")
             print("3. Expense Statistics")
+            print("4. Top Spending Categories")
+
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-3): ").strip()
+            choice = input("\nEnter your choice (0-4): ").strip()
 
             if choice == "1":
                 self._monthly_summary()
@@ -146,10 +148,12 @@ class Menu:
                 self._spending_by_category()
             elif choice == "3":
                 self._expense_statistics()
+            elif choice == "4":
+                self._top_spending_categories()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-3.")
+                print("✗ Invalid choice. Enter 0-4.")
 
     def _export_menu(self):
         """Export submenu."""
@@ -561,6 +565,38 @@ class Menu:
 
         print("-" * 35)
         print(f"{'Grand Total':<20}${grand_total:.2f}\n")
+
+    def _top_spending_categories(self):
+        """
+        Display highest spending categories.
+        """
+
+        print("\n--- Top Spending Categories ---")
+
+        categories = (
+            self.expense_service
+            .get_top_spending_categories()
+        )
+
+        if not categories:
+            print("\nNo expenses found.\n")
+            return
+
+
+        print("-" * 40)
+
+        for index, (category, amount) in enumerate(
+            categories,
+            start=1
+        ):
+            print(
+                f"{index}. "
+                f"{category.title():<20}"
+                f"${amount:.2f}"
+            )
+
+        print("-" * 40)
+        print()
 
     def _expense_statistics(self):
         """
