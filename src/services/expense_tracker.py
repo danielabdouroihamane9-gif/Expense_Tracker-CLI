@@ -117,3 +117,22 @@ class ExpenseTrackerService:
         self.expenses.clear()
         self.storage.save_expenses(self.expenses)
         return True
+
+    def update_expense(
+            self,
+            expense,
+            amount,
+            category,
+            description
+    ):
+        """
+        Update an existing expense.
+        """
+
+        expense.amount = amount
+        expense.category = category
+        expense.description = description
+
+        self.storage.save_expenses(self.expenses)
+
+        return True
