@@ -58,42 +58,45 @@ class Menu:
             print("\nExpense Management:")
             print("1. Add Expense")
             print("2. Edit Expense")
-            print("3. View All Expenses")
-            print("4. View Expense Details")
-            print("5. Search Expenses")
-            print("6. Filter by Category")
-            print("7. Filter by Date Range")
-            print("8. Sort Expenses")
-            print("9. Delete Expense")
-            print("10. Clear All Expenses")
+            print("3. Duplicate Expense")
+            print("4. View All Expenses")
+            print("5. View Expense Details")
+            print("6. Search Expenses")
+            print("7. Filter by Category")
+            print("8. Filter by Date Range")
+            print("9. Sort Expenses")
+            print("10. Delete Expense")
+            print("11. Clear All Expenses")
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-10): ").strip()
+            choice = input("\nEnter your choice (0-11): ").strip()
 
             if choice == "1":
                 self._add_expense()
             elif choice == "2":
                 self._edit_expense()
             elif choice == "3":
-                self._view_all_expenses()
+                self._duplicate_expense()
             elif choice == "4":
-                self._view_expense_details()
+                self._view_all_expenses()
             elif choice == "5":
-                self._search_expenses()
+                self._view_expense_details()
             elif choice == "6":
-                self._filter_by_category()
+                self._search_expenses()
             elif choice == "7":
-                self._filter_by_date()
+                self._filter_by_category()
             elif choice == "8":
-                self._sort_expenses()
+                self._filter_by_date_range()
             elif choice == "9":
-                self._delete_expense()
+                self._sort_expenses()
             elif choice == "10":
+                self._delete_expense()
+            elif choice == "11":
                 self._clear_all_expenses()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-10.")
+                print("✗ Invalid choice. Enter 0-11.")
 
     def _budget_menu(self):
         """Budget management submenu."""
@@ -289,6 +292,34 @@ class Menu:
             )
 
             return
+
+    def _duplicate_expense(self):
+        """
+        Duplicate an existing expense.
+        """
+
+        expense = self._select_expense()
+
+        if expense is None:
+            return
+
+        print("\n--- Duplicate Expense ---")
+
+        print(f"Category    : {expense.category}")
+        print(f"Description : {expense.description}")
+        print(f"Amount      : ${expense.amount:.2f}")
+        print(f"Original Date : {expense.date}")
+
+        print("\nEnter the new date.")
+
+        new_date = self.commands.get_user_date()
+
+        message = self.expense_service.duplicate_expense(
+            expense,
+            new_date,
+        )
+
+        print(f"\n{message}")
 
     def _select_expense(self):
         """
