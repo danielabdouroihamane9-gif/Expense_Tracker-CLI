@@ -129,18 +129,21 @@ class Menu:
             print("\nReports:")
             print("1. Monthly Summary")
             print("2. Spending by Category")
+            print("3. Expense Statistics")
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-2): ").strip()
+            choice = input("\nEnter your choice (0-3): ").strip()
 
             if choice == "1":
                 self._monthly_summary()
             elif choice == "2":
                 self._spending_by_category()
+            elif choice == "3":
+                self._expense_statistics()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-2.")
+                print("✗ Invalid choice. Enter 0-3.")
 
     def _export_menu(self):
         """Export submenu."""
@@ -468,6 +471,97 @@ class Menu:
 
         print("-" * 35)
         print(f"{'Grand Total':<20}${grand_total:.2f}\n")
+
+    def _expense_statistics(self):
+        """
+        Display expense statistics.
+        """
+
+        print("\n--- Expense Statistics ---")
+
+        stats = (
+            self.expense_service
+            .get_expense_statistics()
+        )
+
+        if stats["count"] == 0:
+            print("\nNo expenses found.\n")
+            return
+
+        print("-" * 45)
+
+        print(
+            f"{'Number of Expenses':<25}"
+            f"{stats['count']}"
+        )
+
+        print(
+            f"{'Total Spending':<25}"
+            f"${stats['total']:.2f}"
+        )
+
+        print(
+            f"{'Average Expense':<25}"
+            f"${stats['average']:.2f}"
+        )
+
+        print(
+            f"{'Highest Expense':<25}"
+            f"${stats['highest'].amount:.2f}"
+        )
+
+        print(
+            f"{'Lowest Expense':<25}"
+            f"${stats['lowest'].amount:.2f}"
+        )
+
+        print("-" * 45)
+
+        print("\nHighest Expense Details")
+
+        print(
+            f"{'ID':<15}"
+            f"{stats['highest_index']}"
+        )
+
+        print(
+            f"Category    : "
+            f"{stats['highest'].category}"
+        )
+
+        print(
+            f"Description : "
+            f"{stats['highest'].description}"
+        )
+
+        print(
+            f"Date        : "
+            f"{stats['highest'].date}"
+        )
+
+        print("\nLowest Expense Details")
+
+        print(
+            f"{'ID':<15}"
+            f"{stats['lowest_index']}"
+        )
+
+        print(
+            f"Category    : "
+            f"{stats['lowest'].category}"
+        )
+
+        print(
+            f"Description : "
+            f"{stats['lowest'].description}"
+        )
+
+        print(
+            f"Date        : "
+            f"{stats['lowest'].date}"
+        )
+
+        print()
 
     def _set_budget(self):
         """Set a budget limit for a category."""
