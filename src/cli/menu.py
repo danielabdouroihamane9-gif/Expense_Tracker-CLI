@@ -64,10 +64,10 @@ class Menu:
             print("6. Delete Expense")
             print("7. Clear All Expenses")
             print("8. Search Expenses")
-
+            print("9. Filter by Date Range")
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-8): ").strip()
+            choice = input("\nEnter your choice (0-9): ").strip()
 
             if choice == "1":
                 self._add_expense()
@@ -85,10 +85,12 @@ class Menu:
                 self._clear_all_expenses()
             elif choice == "8":
                 self._search_expenses()
+            elif choice == "9":
+                self._filter_by_date()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-8.")
+                print("✗ Invalid choice. Enter 0-9.")
 
     def _budget_menu(self):
         """Budget management submenu."""
@@ -320,6 +322,47 @@ class Menu:
         self.expense_service.clear_all_expenses()
 
         print("\n✓ All expenses have been deleted successfully.\n")
+
+    def _filter_by_date(self):
+        """
+        Filter expenses by date range.
+        """
+
+        print("\n--- Filter Expenses by Date ---")
+
+        start_date, end_date = (
+            self.commands.get_user_date_range()
+        )
+
+        expenses = (
+            self.expense_service.get_by_date_range(
+                start_date,
+                end_date
+            )
+        )
+
+
+        if not expenses:
+            print(
+                "\nNo expenses found in this date range.\n"
+            )
+            return
+
+
+        display_expenses_table(
+            expenses,
+            f"{start_date} to {end_date}"
+        )
+
+
+        total = sum(
+            expense.amount
+            for expense in expenses
+        )
+
+        print(
+            f"Total: ${total:.2f}\n"
+        )
 
     def _filter_by_category(self):
         """Filter and display expenses by category."""
