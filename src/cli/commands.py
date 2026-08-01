@@ -116,3 +116,49 @@ class CommandHandler:
             if keyword:
                 return keyword
             print("✗ Keyword cannot be empty")
+
+    @staticmethod
+    def get_user_date_range():
+        """
+        Get and validate start and end dates.
+
+        Returns:
+            tuple:
+                (start_date, end_date)
+        """
+
+        while True:
+            start_input = input(
+                "Enter start date (YYYY-MM-DD): "
+            ).strip()
+
+            end_input = input(
+                "Enter end date (YYYY-MM-DD): "
+            ).strip()
+
+            try:
+                start_date = datetime.strptime(
+                    start_input,
+                    "%Y-%m-%d"
+                ).date()
+
+                end_date = datetime.strptime(
+                    end_input,
+                    "%Y-%m-%d"
+                ).date()
+
+            except ValueError:
+                print(
+                    "✗ Invalid date format. Use YYYY-MM-DD."
+                )
+                continue
+
+
+            if start_date > end_date:
+                print(
+                    "✗ Start date cannot be after end date."
+                )
+                continue
+
+
+            return start_date, end_date
