@@ -136,6 +136,35 @@ class ExpenseTrackerService:
 
         return dict(sorted(spending.items()))
 
+    def get_top_spending_categories(self, limit=5):
+        """
+        Return categories ranked by spending amount.
+
+        Args:
+            limit (int):
+                Number of categories to return.
+
+        Returns:
+            list of tuples:
+                [
+                    ("shopping", 900),
+                    ("food", 500)
+                ]
+        """
+
+        spending = self.get_spending_by_category()
+
+        if not spending:
+            return []
+
+        ranked_categories = sorted(
+            spending.items(),
+            key=lambda item: item[1],
+            reverse=True
+        )
+
+        return ranked_categories[:limit]
+
     def get_expense_statistics(self):
         """
         Calculate summary statistics for all expenses.
