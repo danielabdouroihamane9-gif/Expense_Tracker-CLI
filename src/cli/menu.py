@@ -30,56 +30,59 @@ class Menu:
         while True:
             print("\nMenu:")
             print("1. Add Expense")
-            print("2. View All Expenses")
-            print("3. View Expense Details")
-            print("4. Filter by Category")
-            print("5. Monthly Summary")
-            print("6. Set Budget")
-            print("7. Budget Status")
-            print("8. View Budgets")
-            print("9. Delete Budget")
-            print("10. Clear All Budgets")
-            print("11. Delete Expense")
-            print("12. Clear All Expenses")
-            print("13. Export Expenses to CSV")
-            print("14. Export Summary to CSV")
+            print("2. Edit Expense")
+            print("3. View All Expenses")
+            print("4. View Expense Details")
+            print("5. Filter by Category")
+            print("6. Monthly Summary")
+            print("7. Set Budget")
+            print("8. Budget Status")
+            print("9. View Budgets")
+            print("10. Delete Budget")
+            print("11. Clear All Budgets")
+            print("12. Delete Expense")
+            print("13. Clear All Expenses")
+            print("14. Export Expenses to CSV")
+            print("15. Export Summary to CSV")
             print("0. Exit")
 
-            choice = input("\nEnter your choice (0-14): ").strip()
+            choice = input("\nEnter your choice (0-15): ").strip()
 
             if choice == "1":
                 self._add_expense()
             elif choice == "2":
-                self._view_all_expenses()
+                self._edit_expense()
             elif choice == "3":
-                self._view_expense_details()
+                self._view_all_expenses()
             elif choice == "4":
-                self._filter_by_category()
+                self._view_expense_details()
             elif choice == "5":
-                self._monthly_summary()
+                self._filter_by_category()
             elif choice == "6":
-                self._set_budget()
+                self._monthly_summary()
             elif choice == "7":
-                self._view_budget_status()
+                self._set_budget()
             elif choice == "8":
-                self._view_all_budgets()
+                self._view_budget_status()
             elif choice == "9":
-                self._delete_budget()
+                self._view_all_budgets()
             elif choice == "10":
-                self._clear_all_budgets()
+                self._delete_budget()
             elif choice == "11":
-                self._delete_expense()
+                self._clear_all_budgets()
             elif choice == "12":
-                self._clear_all_expenses()
+                self._delete_expense()
             elif choice == "13":
-                self._export_expenses()
+                self._clear_all_expenses()
             elif choice == "14":
+                self._export_expenses()
+            elif choice == "15":
                 self._export_summary()
             elif choice == "0":
                 print("\n✓ Goodbye!\n")
                 break
             else:
-                print("✗ Invalid choice. Enter 0-14.")
+                print("✗ Invalid choice. Enter 0-15.")
 
     def _add_expense(self):
         """Add a new expense."""
@@ -91,6 +94,55 @@ class Menu:
 
         result = self.expense_service.add_expense(date, amount, category, description)
         print(result)
+
+    def _edit_expense(self):
+        """Edit an existing expense."""
+
+        expense = self._select_expense()
+
+        if expense is None:
+            return
+
+
+        print("\nLeave blank to keep current value\n")
+
+
+        amount = input(
+            f"Amount ({expense.amount}): "
+        ).strip()
+
+        category = input(
+            f"Category ({expense.category}): "
+        ).strip()
+
+        description = input(
+            f"Description ({expense.description}): "
+        ).strip()
+
+
+        if amount:
+            amount = float(amount)
+        else:
+            amount = expense.amount
+
+
+        if not category:
+            category = expense.category
+
+
+        if not description:
+            description = expense.description
+
+
+        self.expense_service.update_expense(
+            expense,
+            amount,
+            category,
+            description
+        )
+
+
+        print("\n✓ Expense updated successfully.\n")
 
     def _view_all_expenses(self):
         """View all expenses."""
