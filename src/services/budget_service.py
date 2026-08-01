@@ -91,3 +91,29 @@ class BudgetService:
                 }
 
         return status
+
+    def delete_budget(self, category):
+        """
+        Delete a budget for a specific category.
+
+        Args:
+            category (str): Budget category.
+
+        Returns:
+            bool: True if the budget existed and was deleted.
+        """
+        category = category.lower()
+
+        if category not in self.budgets:
+            return False
+
+        del self.budgets[category]
+        self.storage.save_budgets(self.budgets)
+
+        return True
+
+    def clear_all_budgets(self):
+        """Wipe out all stored budgets."""
+        self.budgets.clear()
+        self.storage.save_budgets(self.budgets)
+        return "✓ All budgets have been successfully cleared."
