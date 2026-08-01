@@ -34,14 +34,16 @@ class Menu:
             print("3. Filter by Category")
             print("4. Monthly Summary")
             print("5. Set Budget")
-            print("6. View Budget Status")
-            print("7. View All Budgets")
-            print("8. Delete Expense")
-            print("9. Clear All Expenses")
-            print("10. Export Expenses to CSV")
-            print("11. Export Summary to CSV")
+            print("6. Budget Status")
+            print("7. View Budgets")
+            print("8. Delete Budget")
+            print("9. Delete Expense")
+            print("10. Clear All Expenses")
+            print("11. Export Expenses to CSV")
+            print("12. Export Summary to CSV")            
             print("0. Exit")
-            choice = input("\nEnter your choice (0-11): ").strip()
+
+            choice = input("\nEnter your choice (0-12): ").strip()
 
             if choice == "1":
                 self._add_expense()
@@ -58,18 +60,20 @@ class Menu:
             elif choice == "7":
                 self._view_all_budgets()
             elif choice == "8":
-                self._delete_expense()
+                self._delete_budget()
             elif choice == "9":
-                self._clear_all_expenses()
+                self._delete_expense()
             elif choice == "10":
-                self._export_expenses()
+                self._clear_all_expenses()
             elif choice == "11":
+                self._export_expenses()
+            elif choice == "12":
                 self._export_summary()
             elif choice == "0":
                 print("\n✓ Goodbye!\n")
                 break
             else:
-                print("✗ Invalid choice. Enter 0-11.")
+                print("✗ Invalid choice. Enter 0-12.")
 
     def _add_expense(self):
         """Add a new expense."""
@@ -210,6 +214,63 @@ class Menu:
 
         result = self.budget_service.set_budget(category, amount)
         print(result)
+
+    def _delete_budget(self):
+        """Delete an existing budget."""
+
+        budgets = self.budget_service.get_all_budgets()
+
+        if not budgets:
+            print("\nNo budgets have been set.\n")
+            return
+
+        print("\nCurrent Budgets")
+        print("-" * 35)
+
+        categories = list(budgets.keys())
+
+        for index, category in enumerate(categories, start=1):
+            print(
+                f"{index}. {category.title():<15} "
+                f"${budgets[category]:.2f}"
+            )
+
+        while True:
+
+            choice = input(
+                "\nEnter budget number to delete (0 to cancel): "
+            ).strip()
+
+            if choice == "0":
+                print("Deletion cancelled.")
+                return
+
+            if not choice.isdigit():
+                print("✗ Please enter a valid number.")
+                continue
+
+            index = int(choice)
+
+            if index < 1 or index > len(categories):
+                print("✗ Invalid budget number.")
+                continue
+
+            category = categories[index - 1]
+
+            confirm = input(
+                f"Delete budget for '{category.title()}'? (y/n): "
+            ).strip().lower()
+
+            if confirm != "y":
+                print("Deletion cancelled.")
+                return
+
+            if self.budget_service.delete_budget(category):
+                print("✓ Budget deleted successfully.")
+            else:
+                print("✗ Budget could not be deleted.")
+
+            return
 
     def _view_budget_status(self):
         """View budget status for current month."""
