@@ -109,6 +109,33 @@ class ExpenseTrackerService:
 
         return {cat: total for cat, total in summary.items() if total > 0}
 
+    def get_spending_by_category(self):
+        """
+        Calculate total spending for each category.
+
+        Returns:
+            dict:
+                {
+                    "food": 120.50,
+                    "transport": 75.00
+                }
+        """
+
+        expenses = self.get_all_expenses()
+
+        spending = {}
+
+        for expense in expenses:
+
+            category = expense.category
+
+            if category not in spending:
+                spending[category] = 0
+
+            spending[category] += expense.amount
+
+        return dict(sorted(spending.items()))
+
     def delete_expense(self, expense):
         """
         Delete an expense object.
