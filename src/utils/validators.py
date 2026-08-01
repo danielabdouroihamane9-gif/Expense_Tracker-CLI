@@ -9,7 +9,8 @@ VALID_CATEGORIES = {
     "utilities",
     "entertainment",
     "healthcare",
-    "other",
+    "shopping",
+    "other",    
 }
 
 

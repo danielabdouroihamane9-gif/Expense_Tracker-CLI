@@ -80,19 +80,24 @@ def display_budget_status(status):
 
 
 def display_budgets(budgets):
-    """Display all set budgets."""
+    """Display budgets in a numbered table."""
+
     if not budgets:
-        print("\n✗ No budgets set yet.\n")
+        print("\nNo budgets found.\n")
         return
 
-    print(f"\n{'=' * 40}")
-    print(f"{'Set Budgets':<40}")
-    print(f"{'=' * 40}")
-    print(f"{'Category':<20} {'Budget':<15}")
-    print("-" * 40)
+    print("\nBudgets")
+    print(f"{'No':<4} {'Category':<18} {'Budget':<10}")
+    print("-" * 35)
 
-    for category in sorted(budgets.keys()):
-        amount = budgets[category]
-        print(f"{category.capitalize():<20} ${amount:<14.2f}")
+    for index, (category, amount) in enumerate(
+        budgets.items(),
+        start=1,
+    ):
+        print(
+            f"{index:<4}"
+            f"{category.title():<18}"
+            f"${amount:<9.2f}"
+        )
 
-    print(f"{'=' * 40}\n")
+    print()
