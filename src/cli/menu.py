@@ -60,14 +60,15 @@ class Menu:
             print("2. Edit Expense")
             print("3. View All Expenses")
             print("4. View Expense Details")
-            print("5. Filter by Category")
-            print("6. Delete Expense")
-            print("7. Clear All Expenses")
-            print("8. Search Expenses")
-            print("9. Filter by Date Range")
+            print("5. Search Expenses")
+            print("6. Filter by Category")
+            print("7. Filter by Date Range")
+            print("8. Sort Expenses")
+            print("9. Delete Expense")
+            print("10. Clear All Expenses")
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-9): ").strip()
+            choice = input("\nEnter your choice (0-10): ").strip()
 
             if choice == "1":
                 self._add_expense()
@@ -78,19 +79,21 @@ class Menu:
             elif choice == "4":
                 self._view_expense_details()
             elif choice == "5":
-                self._filter_by_category()
-            elif choice == "6":
-                self._delete_expense()
-            elif choice == "7":
-                self._clear_all_expenses()
-            elif choice == "8":
                 self._search_expenses()
-            elif choice == "9":
+            elif choice == "6":
+                self._filter_by_category()
+            elif choice == "7":
                 self._filter_by_date()
+            elif choice == "8":
+                self._sort_expenses()
+            elif choice == "9":
+                self._delete_expense()
+            elif choice == "10":
+                self._clear_all_expenses()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-9.")
+                print("✗ Invalid choice. Enter 0-10.")
 
     def _budget_menu(self):
         """Budget management submenu."""
@@ -230,6 +233,62 @@ class Menu:
         if expenses:
             total = sum(e.amount for e in expenses)
             print(f"Total: ${total:.2f}\n")
+
+    def _sort_expenses(self):
+        """
+        Display expenses sorted by a selected field.
+        """
+
+        if not self.expense_service.get_all_expenses():
+            print("\nNo expenses found.\n")
+            return
+
+        while True:
+
+            print("\n--- Sort Expenses ---")
+            print("1. Date (Newest First)")
+            print("2. Date (Oldest First)")
+            print("3. Amount (Highest First)")
+            print("4. Amount (Lowest First)")
+            print("5. Category (A-Z)")
+            print("6. Category (Z-A)")
+            print("7. Description (A-Z)")
+            print("8. Description (Z-A)")
+            print("0. Back")
+
+            choice = input("\nChoose an option: ").strip()
+
+            mapping = {
+                "1": ("date", True),
+                "2": ("date", False),
+                "3": ("amount", True),
+                "4": ("amount", False),
+                "5": ("category", False),
+                "6": ("category", True),
+                "7": ("description", False),
+                "8": ("description", True),
+            }
+
+            if choice == "0":
+                return
+
+            if choice not in mapping:
+                print("✗ Invalid option.")
+                continue
+
+            sort_by, reverse = mapping[choice]
+
+            expenses = self.expense_service.get_sorted_expenses(
+                sort_by,
+                reverse,
+            )
+
+            display_expenses_table(
+                expenses,
+                "Sorted Expenses",
+            )
+
+            return
 
     def _select_expense(self):
         """
