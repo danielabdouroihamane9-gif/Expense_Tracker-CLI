@@ -37,13 +37,14 @@ class Menu:
             print("6. Budget Status")
             print("7. View Budgets")
             print("8. Delete Budget")
-            print("9. Delete Expense")
-            print("10. Clear All Expenses")
-            print("11. Export Expenses to CSV")
-            print("12. Export Summary to CSV")            
+            print("9. Clear All Budgets")
+            print("10. Delete Expense")
+            print("11. Clear All Expenses")
+            print("12. Export Expenses to CSV")
+            print("13. Export Summary to CSV")
             print("0. Exit")
 
-            choice = input("\nEnter your choice (0-12): ").strip()
+            choice = input("\nEnter your choice (0-13): ").strip()
 
             if choice == "1":
                 self._add_expense()
@@ -62,18 +63,20 @@ class Menu:
             elif choice == "8":
                 self._delete_budget()
             elif choice == "9":
-                self._delete_expense()
+                self._clear_all_budgets()
             elif choice == "10":
-                self._clear_all_expenses()
+                self._delete_expense()
             elif choice == "11":
-                self._export_expenses()
+                self._clear_all_expenses()
             elif choice == "12":
-                self._export_summary()
+                self._export_expenses()
+            elif choice == "13":
+                self._export_summary()                
             elif choice == "0":
                 print("\n✓ Goodbye!\n")
                 break
             else:
-                print("✗ Invalid choice. Enter 0-12.")
+                print("✗ Invalid choice. Enter 0-13.")
 
     def _add_expense(self):
         """Add a new expense."""
@@ -94,25 +97,32 @@ class Menu:
             total = sum(e.amount for e in expenses)
             print(f"Total: ${total:.2f}\n")
 
-    def _delete_expense(self):
-        """Delete an expense selected by the user."""
+    def _select_expense(self):
+        """
+        Display all expenses and let the user select one.
+
+        Returns:
+            Expense: The selected expense object.
+            None: If the user cancels.
+        """
 
         expenses = self.expense_service.get_all_expenses()
 
         if not expenses:
-            print("\nNo expenses to delete.\n")
-            return
+            print("\nNo expenses found.\n")
+            return None
 
-        display_expenses_table(expenses, "Delete Expense")
+        display_expenses_table(expenses, "Select Expense")
 
         while True:
+
             choice = input(
-                "\nEnter expense number to delete (0 to cancel): "
+                "\nEnter expense number (0 to cancel): "
             ).strip()
 
             if choice == "0":
-                print("Deletion cancelled.")
-                return
+                print("Operation cancelled.")
+                return None
 
             if not choice.isdigit():
                 print("✗ Please enter a valid number.")
@@ -124,23 +134,28 @@ class Menu:
                 print("✗ Invalid expense number.")
                 continue
 
-            expense = expenses[index - 1]
+            return expenses[index - 1]
 
-            confirm = input(
-                f"\nDelete '{expense.description}' "
-                f"(${expense.amount:.2f})? (y/n): "
-            ).strip().lower()
+    def _delete_expense(self):
+        """Delete an expense selected by the user."""
+        expense = self._select_expense()
 
-            if confirm != "y":
-                print("Deletion cancelled.")
-                return
-
-            if self.expense_service.delete_expense(expense):
-                print("✓ Expense deleted successfully.")
-            else:
-                print("✗ Failed to delete expense.")
-
+        if expense is None:
             return
+
+        confirm = input(
+            f"\nDelete '{expense.description}' "
+            f"(${expense.amount:.2f})? (y/n): "
+        ).strip().lower()
+
+        if confirm != "y":
+            print("Deletion cancelled.")
+            return
+
+        if self.expense_service.delete_expense(expense):
+            print("✓ Expense deleted successfully.")
+        else:
+            print("✗ Failed to delete expense.")
 
     def _clear_all_expenses(self):
         """Clear all expenses after confirmation."""
@@ -271,6 +286,31 @@ class Menu:
                 print("✗ Budget could not be deleted.")
 
             return
+
+    def _clear_all_budgets(self):
+        """Clear all budgets after confirmation."""
+
+        budgets = self.budget_service.get_all_budgets()
+
+        if not budgets:
+            print("\nNo budgets to clear.\n")
+            return
+
+        print("\n⚠ WARNING")
+        print("This will permanently delete ALL budgets.")
+        print("This action cannot be undone.\n")
+
+        confirm = input(
+            "Type 'YES' to continue: "
+        ).strip()
+
+        if confirm != "YES":
+            print("\nOperation cancelled.")
+            return
+
+        self.budget_service.clear_all_budgets()
+
+        print("\n✓ All budgets have been deleted successfully.\n")
 
     def _view_budget_status(self):
         """View budget status for current month."""
