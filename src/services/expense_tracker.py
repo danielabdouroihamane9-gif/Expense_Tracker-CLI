@@ -162,3 +162,26 @@ class ExpenseTrackerService:
         self.storage.save_expenses(self.expenses)
 
         return True
+
+    def get_by_date_range(self, start_date, end_date):
+        """
+        Return expenses between two dates.
+
+        Args:
+            start_date(date)
+            end_date(date)
+
+        Returns:
+            list of expenses
+        """
+
+        expenses = self.get_all_expenses()
+
+        filtered = []
+
+        for expense in expenses:
+
+            if start_date <= expense.date <= end_date:
+                filtered.append(expense)
+
+        return filtered
