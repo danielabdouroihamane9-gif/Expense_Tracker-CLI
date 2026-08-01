@@ -22,31 +22,49 @@ class Menu:
         self.commands = CommandHandler()
 
     def run(self):
-        """Run the main interactive menu loop."""
+        """Run the main menu loop with submenu architecture."""
         print("\n" + "=" * 60)
         print("   Expense Tracker CLI - Manage Your Finances with Ease")
         print("=" * 60)
 
         while True:
-            print("\nMenu:")
+            print("\nMain Menu:")
+            print("1. Expense Management")
+            print("2. Budget Management")
+            print("3. Reports")
+            print("4. Export")
+            print("0. Exit")
+
+            choice = input("\nEnter your choice (0-4): ").strip()
+
+            if choice == "1":
+                self._expense_menu()
+            elif choice == "2":
+                self._budget_menu()
+            elif choice == "3":
+                self._reports_menu()
+            elif choice == "4":
+                self._export_menu()
+            elif choice == "0":
+                print("\n✓ Goodbye!\n")
+                break
+            else:
+                print("✗ Invalid choice. Enter 0-4.")
+
+    def _expense_menu(self):
+        """Expense management submenu."""
+        while True:
+            print("\nExpense Management:")
             print("1. Add Expense")
             print("2. Edit Expense")
             print("3. View All Expenses")
             print("4. View Expense Details")
             print("5. Filter by Category")
-            print("6. Monthly Summary")
-            print("7. Set Budget")
-            print("8. Budget Status")
-            print("9. View Budgets")
-            print("10. Delete Budget")
-            print("11. Clear All Budgets")
-            print("12. Delete Expense")
-            print("13. Clear All Expenses")
-            print("14. Export Expenses to CSV")
-            print("15. Export Summary to CSV")
-            print("0. Exit")
+            print("6. Delete Expense")
+            print("7. Clear All Expenses")
+            print("0. Back")
 
-            choice = input("\nEnter your choice (0-15): ").strip()
+            choice = input("\nEnter your choice (0-7): ").strip()
 
             if choice == "1":
                 self._add_expense()
@@ -59,31 +77,76 @@ class Menu:
             elif choice == "5":
                 self._filter_by_category()
             elif choice == "6":
-                self._monthly_summary()
-            elif choice == "7":
-                self._set_budget()
-            elif choice == "8":
-                self._view_budget_status()
-            elif choice == "9":
-                self._view_all_budgets()
-            elif choice == "10":
-                self._delete_budget()
-            elif choice == "11":
-                self._clear_all_budgets()
-            elif choice == "12":
                 self._delete_expense()
-            elif choice == "13":
+            elif choice == "7":
                 self._clear_all_expenses()
-            elif choice == "14":
-                self._export_expenses()
-            elif choice == "15":
-                self._export_summary()
             elif choice == "0":
-                print("\n✓ Goodbye!\n")
                 break
             else:
-                print("✗ Invalid choice. Enter 0-15.")
+                print("✗ Invalid choice. Enter 0-7.")
 
+    def _budget_menu(self):
+        """Budget management submenu."""
+        while True:
+            print("\nBudget Management:")
+            print("1. Set Budget")
+            print("2. Budget Status")
+            print("3. View Budgets")
+            print("4. Delete Budget")
+            print("5. Clear All Budgets")
+            print("0. Back")
+
+            choice = input("\nEnter your choice (0-5): ").strip()
+
+            if choice == "1":
+                self._set_budget()
+            elif choice == "2":
+                self._view_budget_status()
+            elif choice == "3":
+                self._view_all_budgets()
+            elif choice == "4":
+                self._delete_budget()
+            elif choice == "5":
+                self._clear_all_budgets()
+            elif choice == "0":
+                break
+            else:
+                print("✗ Invalid choice. Enter 0-5.")
+
+    def _reports_menu(self):
+        """Reports submenu."""
+        while True:
+            print("\nReports:")
+            print("1. Monthly Summary")
+            print("0. Back")
+
+            choice = input("\nEnter your choice (0-1): ").strip()
+
+            if choice == "1":
+                self._monthly_summary()
+            elif choice == "0":
+                break
+            else:
+                print("✗ Invalid choice. Enter 0-1.")
+
+    def _export_menu(self):
+        """Export submenu."""
+        while True:
+            print("\nExport:")
+            print("1. Export Expenses")
+            print("2. Export Summary")
+            print("0. Back")
+
+            choice = input("\nEnter your choice (0-2): ").strip()
+
+            if choice == "1":
+                self._export_expenses()
+            elif choice == "2":
+                self._export_summary()
+            elif choice == "0":
+                break
+            else:
+                print("✗ Invalid choice. Enter 0-2.")
     def _add_expense(self):
         """Add a new expense."""
         print("\n--- Add Expense ---")
