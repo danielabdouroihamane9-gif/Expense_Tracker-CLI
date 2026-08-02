@@ -57,26 +57,48 @@ def display_budget_status(status):
         print("\n✗ No budgets set. Use 'set-budget' to set budget limits.\n")
         return
 
-    print(f"\n{'=' * 70}")
-    print(f"{'Budget Status (Current Month)':<70}")
-    print(f"{'=' * 70}")
-    print(f"{'Category':<15} {'Spent':<12} {'Budget':<12} {'%':<8} {'Status':<15}")
-    print("-" * 70)
+    print(f"\n{'=' * 80}")
+    print(f"{'Budget Status (Current Month)':<60}")
+    print(f"{'=' * 80}")
+    print(
+        f"{'Category':<15}"
+        f"{'Spent':<12}"
+        f"{'Budget':<12}"
+        f"{'Remaining':<12}"
+        f"{'Used %':<10}"
+        f"{'Status':<18}"
+    )
+    print("-" * 80)
 
     for category in sorted(status.keys()):
         info = status[category]
         spent = info["spent"]
         budget = info["budget"]
+        remaining = info["remaining"]
         percentage = info["percentage"]
         warning = info["warning"]
+        over_budget = info["over_budget"]
+        limit = info["limit"]
 
-        status_text = "⚠️  ALERT 80%" if warning else "✓ OK"
+        if over_budget:
+            status_text = "❌  OVER BUDGET"
+        elif warning:
+            status_text = "⚠️  Near Budget Limit"
+        elif limit:
+            status_text = " ❗  At Budget Limit"
+        else:
+            status_text = "✅  Within Budget"    
 
         print(
-            f"{category.capitalize():<15} ${spent:<11.2f} ${budget:<11.2f} {percentage:<7.1f}% {status_text:<15}"
-        )
+            f"{category.capitalize():<15}"
+            f"${spent:<11.2f}"
+            f"${budget:<11.2f}"
+            f"${remaining:<11.2f}"
+            f"{percentage:<9.2f}"
+            f"{status_text:<17}"
+        )        
 
-    print(f"{'=' * 70}\n")
+    print(f"{'=' * 80}\n")
 
 
 def display_budgets(budgets):
