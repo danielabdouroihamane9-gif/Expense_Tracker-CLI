@@ -8,6 +8,8 @@ from src.utils import (
     display_summary,
     display_budget_status,
     display_budgets,
+    display_expense_details,
+    display_spending_by_category,
 )
 from src.cli.commands import CommandHandler
 
@@ -372,14 +374,7 @@ class Menu:
         if expense is None:
             return
 
-        print("\nExpense Details")
-        print("-" * 30)
-
-        print(f"Date: {expense.date}")
-        print(f"Amount: ${expense.amount:.2f}")
-        print(f"Category: {expense.category}")
-        print(f"Description: {expense.description}")
-
+        display_expense_details(expense)
         print()
 
     def _delete_expense(self):
@@ -539,32 +534,10 @@ class Menu:
         """
         Display total spending grouped by category.
         """
-
         print("\n--- Spending by Category ---")
 
-        spending = (
-            self.expense_service.get_spending_by_category()
-        )
-
-        if not spending:
-            print("\nNo expenses found.\n")
-            return
-
-        print("-" * 35)
-        print(f"{'Category':<20}{'Total'}")
-        print("-" * 35)
-
-        grand_total = 0
-
-        for category, total in spending.items():
-            print(
-                f"{category.title():<20}"
-                f"${total:.2f}"
-            )
-            grand_total += total
-
-        print("-" * 35)
-        print(f"{'Grand Total':<20}${grand_total:.2f}\n")
+        spending = self.expense_service.get_spending_by_category()       
+        display_spending_by_category(spending)
 
     def _top_spending_categories(self):
         """
