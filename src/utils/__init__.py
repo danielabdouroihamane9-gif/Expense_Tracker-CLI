@@ -15,6 +15,8 @@ from .formatters import (
     display_summary,
     display_budget_status,
     display_budgets,
+    display_expense_details,
+    display_spending_by_category,
 )
 
 __all__ = [
@@ -30,4 +32,6 @@ __all__ = [
     "display_summary",
     "display_budget_status",
     "display_budgets",
+    "display_expense_details",
+    "display_spending_by_category",
 ]

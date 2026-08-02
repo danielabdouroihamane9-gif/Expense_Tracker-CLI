@@ -123,3 +123,39 @@ def display_budgets(budgets):
         )
 
     print()
+
+def display_expense_details(expense):
+    """Display detailed information for a single expense."""
+
+    print("\nExpense Details")
+    print("-" * 30)
+
+    print(f"Date: {expense.date}")
+    print(f"Amount: ${expense.amount:.2f}")
+    print(f"Category: {expense.category}")
+    print(f"Description: {expense.description}")
+
+    print()
+
+def display_spending_by_category(spending):
+    """Display total spending grouped by category"""
+
+    if not spending:
+        print("\nNo expenses found.\n")
+        return
+
+    print("-" * 35)
+    print(f"{'Category':<20}{'Total'}")
+    print("-" * 35)
+
+    grand_total = 0
+
+    for category, total in spending.items():
+        print(
+            f"{category.title():<20}"
+            f"${total:.2f}"
+        )
+        grand_total += total
+
+    print("-" * 35)
+    print(f"{'Grand Total':<20}${grand_total:.2f}\n")
