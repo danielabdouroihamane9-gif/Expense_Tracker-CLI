@@ -80,15 +80,35 @@ class BudgetService:
             spent = monthly_summary.get(category, 0.0)
             budget = self.budgets.get(category)
 
-            if budget:
-                percentage = (spent / budget) * 100
-                status[category] = {
-                    "spent": spent,
-                    "budget": budget,
-                    "remaining": budget - spent,
-                    "percentage": percentage,
-                    "warning": percentage >= 80,
-                }
+            if budget is None:
+                continue
+
+            percentage = (spent / budget) * 100 if budget > 0 else 0
+            remaining = budget - spent
+
+            warning = 80 <= percentage < 100
+            over_budget = percentage > 100
+            limit = percentage == 100
+
+            if over_budget:
+                status_text = "❌  OVER BUDGET"
+            elif warning:
+                status_text = "⚠️  Near Budget Limit"
+            elif limit:
+                status_text = "❗  At Budget Limit"
+            else:
+                status_text = "✅  Within Budget"
+
+            status[category] = {
+                "spent": spent,
+                "budget": budget,
+                "remaining": remaining,
+                "percentage": percentage,
+                "warning": warning,
+                "over_budget": over_budget,
+                "limit": limit,
+                "status": status_text,
+            }
 
         return status
 
