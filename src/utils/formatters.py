@@ -260,3 +260,16 @@ def display_top_spending_categories(categories):
 
     print("-" * 40)
     print()
+
+def display_budget_edit_preview(category, current_amount):
+    """Display information about the budget being edited."""
+
+    print(
+        f"\nEditing budget: "
+        f"{category.title()}"
+    )
+
+    print(
+        f"Current amount: "
+        f"${current_amount:.2f}"
+    )
