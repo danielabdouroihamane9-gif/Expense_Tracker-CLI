@@ -238,3 +238,25 @@ def display_expense_statistics(stats):
 
     print()
 
+def display_top_spending_categories(categories):
+    """Display highest spending categories."""
+
+    if not categories:
+        print("\nNo expenses found.\n")
+        return
+
+    print("\n--- Top Spending Categories ---")
+    print("-" * 40)
+
+    for index, (category, amount) in enumerate(
+        categories,
+        start=1,
+    ):
+        print(
+            f"{index}. "
+            f"{category.title():<20}"
+            f"${amount:.2f}"
+        )
+
+    print("-" * 40)
+    print()

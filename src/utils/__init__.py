@@ -19,6 +19,7 @@ from .formatters import (
     display_spending_by_category,
     display_duplicate_expenses,
     display_expense_statistics,
+    display_top_spending_categories,
 )
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "display_spending_by_category",
     "display_duplicate_expenses",
     "display_expense_statistics",
+    "display_top_spending_categories",
 ]
