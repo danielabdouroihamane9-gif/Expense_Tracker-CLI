@@ -13,6 +13,7 @@ from src.utils import (
     display_duplicate_expenses,
     display_expense_statistics,
     display_top_spending_categories,
+    display_budget_edit_preview,
 )
 from src.cli.commands import CommandHandler
 
@@ -287,9 +288,7 @@ class Menu:
             return
 
     def _duplicate_expense(self):
-        """
-        Duplicate an existing expense.
-        """
+        """Duplicate an existing expense."""
 
         expense = self._select_expense()
 
@@ -401,9 +400,7 @@ class Menu:
         print("\n✓ All expenses have been deleted successfully.\n")
 
     def _filter_by_date(self):
-        """
-        Filter expenses by date range.
-        """
+        """Filter expenses by date range."""
 
         print("\n--- Filter Expenses by Date ---")
 
@@ -418,19 +415,16 @@ class Menu:
             )
         )
 
-
         if not expenses:
             print(
                 "\nNo expenses found in this date range.\n"
             )
             return
 
-
         display_expenses_table(
             expenses,
             f"{start_date} to {end_date}"
         )
-
 
         total = sum(
             expense.amount
@@ -552,34 +546,18 @@ class Menu:
         print(result)
 
     def _edit_budget(self):
-        """
-        Edit an existing budget.
-        """
+        """Edit an existing budget for a category."""
 
         budget = self._select_budget()
-
 
         if budget is None:
             return
 
-
         category, current_amount = budget
 
-
-        print(
-            f"\nEditing budget: "
-            f"{category.title()}"
-        )
-
-
-        print(
-            f"Current amount: "
-            f"${current_amount:.2f}"
-        )
-
+        display_budget_edit_preview(category, current_amount)
 
         new_amount = self.commands.get_budget_amount()
-
 
         result = self.budget_service.set_budget(
             category,
@@ -604,13 +582,10 @@ class Menu:
             print("\nNo budgets have been set.\n")
             return None
 
-
         print("\nSelect Budget")
         print("-" * 35)
 
-
         categories = list(budgets.keys())
-
 
         for index, category in enumerate(categories, start=1):
             print(
@@ -619,18 +594,15 @@ class Menu:
                 f"${budgets[category]:.2f}"
             )
 
-
         while True:
 
             choice = input(
                 "\nEnter budget number (0 to cancel): "
             ).strip()
 
-
             if choice == "0":
                 print("Operation cancelled.")
                 return None
-
 
             if not choice.isdigit():
                 print(
@@ -638,16 +610,13 @@ class Menu:
                 )
                 continue
 
-
             index = int(choice)
-
 
             if index < 1 or index > len(categories):
                 print(
                     "✗ Invalid budget number."
                 )
                 continue
-
 
             category = categories[index - 1]
 
@@ -657,19 +626,14 @@ class Menu:
             )
 
     def _delete_budget(self):
-        """
-        Delete an existing budget.
-        """
+        """Delete a budget for a selected category."""
 
         budget = self._select_budget()
-
 
         if budget is None:
             return
 
-
         category, amount = budget
-
 
         confirm = input(
             f"\nDelete budget for "
@@ -677,13 +641,11 @@ class Menu:
             f"(${amount:.2f})? (y/n): "
         ).strip().lower()
 
-
         if confirm != "y":
             print(
                 "Deletion cancelled."
             )
             return
-
 
         if self.budget_service.delete_budget(category):
             print(
