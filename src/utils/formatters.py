@@ -5,11 +5,9 @@ def format_currency(amount):
     """Format amount as currency string."""
     return f"${amount:.2f}"
 
-
 def format_date(date):
     """Format date object as string."""
     return str(date)
-
 
 def display_expenses_table(expenses, title="Expenses"):
     """Display expenses in a formatted table using f-strings."""
@@ -26,7 +24,6 @@ def display_expenses_table(expenses, title="Expenses"):
             f"{index:<4} {str(expense.date):<12} ${expense.amount:<9.2f} {expense.category:<15} {expense.description:<30}"
         )
     print()
-
 
 def display_summary(summary, year=None, month=None):
     """Display monthly summary in formatted output."""
@@ -49,7 +46,6 @@ def display_summary(summary, year=None, month=None):
     print("-" * 50)
     print(f"{'Total':<20} ${total:<14.2f}")
     print(f"{'=' * 50}\n")
-
 
 def display_budget_status(status):
     """Display budget status with warnings."""
@@ -97,9 +93,7 @@ def display_budget_status(status):
             f"{percentage:<9.2f}"
             f"{status_text:<17}"
         )        
-
     print(f"{'=' * 80}\n")
-
 
 def display_budgets(budgets):
     """Display budgets in a numbered table."""
@@ -159,3 +153,88 @@ def display_spending_by_category(spending):
 
     print("-" * 35)
     print(f"{'Grand Total':<20}${grand_total:.2f}\n")
+
+def display_duplicate_expenses(expense):
+    """Display duplicate expenses in a formatted table."""
+
+    if expense is None:
+        return
+    
+    print("\n--- Duplicate Expense ---")
+    print(f"Category    : {expense.category}")
+    print(f"Description : {expense.description}")
+    print(f"Amount      : ${expense.amount:.2f}")
+    print(f"Original Date : {expense.date}")
+
+    print("\nEnter the new date.")
+
+def display_expense_statistics(stats):
+    """Display expense statistics in a formatted output."""
+    if stats["count"] == 0:
+        print("\nNo expenses found.\n")
+        return
+
+    print("-" * 45)
+
+    print(
+        f"{'Number of Expenses':<25}"
+        f"{stats['count']}"
+    )
+    print(
+        f"{'Total Spending':<25}"
+        f"${stats['total']:.2f}"
+    )
+    print(
+        f"{'Average Expense':<25}"
+        f"${stats['average']:.2f}"
+    )
+    print(
+        f"{'Highest Expense':<25}"
+        f"${stats['highest'].amount:.2f}"
+    )
+    print(
+        f"{'Lowest Expense':<25}"
+        f"${stats['lowest'].amount:.2f}"
+    )
+    print("-" * 45)
+
+    print("\nHighest Expense Details")
+
+    print(
+        f"{'ID':<15}"
+        f"{stats['highest_index']}"
+    )
+    print(
+        f"Category    : "
+        f"{stats['highest'].category}"
+    )
+    print(
+        f"Description : "
+        f"{stats['highest'].description}"
+    )
+    print(
+        f"Date        : "
+        f"{stats['highest'].date}"
+    )
+
+    print("\nLowest Expense Details")
+
+    print(
+        f"{'ID':<15}"
+        f"{stats['lowest_index']}"
+    )
+    print(
+        f"Category    : "
+        f"{stats['lowest'].category}"
+    )
+    print(
+        f"Description : "
+        f"{stats['lowest'].description}"
+    )
+    print(
+        f"Date        : "
+        f"{stats['lowest'].date}"
+    )
+
+    print()
+
