@@ -12,9 +12,9 @@ from src.utils import (
     display_spending_by_category,
     display_duplicate_expenses,
     display_expense_statistics,
+    display_top_spending_categories,
 )
 from src.cli.commands import CommandHandler
-
 
 class Menu:
     """Interactive menu for expense tracker."""
@@ -519,36 +519,14 @@ class Menu:
         display_spending_by_category(spending)
 
     def _top_spending_categories(self):
-        """
-        Display highest spending categories.
-        """
-
-        print("\n--- Top Spending Categories ---")
+        """Display highest spending categories."""
 
         categories = (
             self.expense_service
             .get_top_spending_categories()
         )
 
-        if not categories:
-            print("\nNo expenses found.\n")
-            return
-
-
-        print("-" * 40)
-
-        for index, (category, amount) in enumerate(
-            categories,
-            start=1
-        ):
-            print(
-                f"{index}. "
-                f"{category.title():<20}"
-                f"${amount:.2f}"
-            )
-
-        print("-" * 40)
-        print()
+        display_top_spending_categories(categories)
 
     def _expense_statistics(self):
         """
@@ -607,8 +585,6 @@ class Menu:
             category,
             new_amount
         )
-
-
         print(result)
 
     def _select_budget(self):
