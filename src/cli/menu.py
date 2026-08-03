@@ -10,13 +10,14 @@ from src.utils import (
     display_budgets,
     display_expense_details,
     display_spending_by_category,
+    display_duplicate_expenses,
+    display_expense_statistics,
 )
 from src.cli.commands import CommandHandler
 
 
 class Menu:
     """Interactive menu for expense tracker."""
-
     def __init__(self):
         """Initialize menu with services."""
         self.expense_service = ExpenseTrackerService()
@@ -139,7 +140,6 @@ class Menu:
             print("2. Spending by Category")
             print("3. Expense Statistics")
             print("4. Top Spending Categories")
-
             print("0. Back")
 
             choice = input("\nEnter your choice (0-4): ").strip()
@@ -188,15 +188,12 @@ class Menu:
 
     def _edit_expense(self):
         """Edit an existing expense."""
-
         expense = self._select_expense()
 
         if expense is None:
             return
 
-
         print("\nLeave blank to keep current value\n")
-
 
         amount = input(
             f"Amount ({expense.amount}): "
@@ -210,20 +207,16 @@ class Menu:
             f"Description ({expense.description}): "
         ).strip()
 
-
         if amount:
             amount = float(amount)
         else:
             amount = expense.amount
 
-
         if not category:
             category = expense.category
 
-
         if not description:
             description = expense.description
-
 
         self.expense_service.update_expense(
             expense,
@@ -231,8 +224,6 @@ class Menu:
             category,
             description
         )
-
-
         print("\n✓ Expense updated successfully.\n")
 
     def _view_all_expenses(self):
@@ -244,10 +235,7 @@ class Menu:
             print(f"Total: ${total:.2f}\n")
 
     def _sort_expenses(self):
-        """
-        Display expenses sorted by a selected field.
-        """
-
+        """Display expenses sorted by a selected field."""
         if not self.expense_service.get_all_expenses():
             print("\nNo expenses found.\n")
             return
@@ -296,7 +284,6 @@ class Menu:
                 expenses,
                 "Sorted Expenses",
             )
-
             return
 
     def _duplicate_expense(self):
@@ -309,15 +296,7 @@ class Menu:
         if expense is None:
             return
 
-        print("\n--- Duplicate Expense ---")
-
-        print(f"Category    : {expense.category}")
-        print(f"Description : {expense.description}")
-        print(f"Amount      : ${expense.amount:.2f}")
-        print(f"Original Date : {expense.date}")
-
-        print("\nEnter the new date.")
-
+        display_duplicate_expenses(expense)
         new_date = self.commands.get_user_date()
 
         message = self.expense_service.duplicate_expense(
@@ -583,84 +562,7 @@ class Menu:
             .get_expense_statistics()
         )
 
-        if stats["count"] == 0:
-            print("\nNo expenses found.\n")
-            return
-
-        print("-" * 45)
-
-        print(
-            f"{'Number of Expenses':<25}"
-            f"{stats['count']}"
-        )
-
-        print(
-            f"{'Total Spending':<25}"
-            f"${stats['total']:.2f}"
-        )
-
-        print(
-            f"{'Average Expense':<25}"
-            f"${stats['average']:.2f}"
-        )
-
-        print(
-            f"{'Highest Expense':<25}"
-            f"${stats['highest'].amount:.2f}"
-        )
-
-        print(
-            f"{'Lowest Expense':<25}"
-            f"${stats['lowest'].amount:.2f}"
-        )
-
-        print("-" * 45)
-
-        print("\nHighest Expense Details")
-
-        print(
-            f"{'ID':<15}"
-            f"{stats['highest_index']}"
-        )
-
-        print(
-            f"Category    : "
-            f"{stats['highest'].category}"
-        )
-
-        print(
-            f"Description : "
-            f"{stats['highest'].description}"
-        )
-
-        print(
-            f"Date        : "
-            f"{stats['highest'].date}"
-        )
-
-        print("\nLowest Expense Details")
-
-        print(
-            f"{'ID':<15}"
-            f"{stats['lowest_index']}"
-        )
-
-        print(
-            f"Category    : "
-            f"{stats['lowest'].category}"
-        )
-
-        print(
-            f"Description : "
-            f"{stats['lowest'].description}"
-        )
-
-        print(
-            f"Date        : "
-            f"{stats['lowest'].date}"
-        )
-
-        print()
+        display_expense_statistics(stats)
 
     def _set_budget(self):
         """Set a budget limit for a category."""
