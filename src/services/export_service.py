@@ -155,9 +155,22 @@ class ExportService:
                         "CSV file has no header."
                     ]
 
+                # Normalize CSV headers
+                normalized_headers = {
+                    header.strip().lower(): header
+                    for header in reader.fieldnames
+                }
+
+                expected_headers = {
+                    "date",
+                    "amount",
+                    "category",
+                    "description",
+                }
+
                 missing_columns = (
-                    required_columns
-                    - set(reader.fieldnames)
+                    expected_headers
+                    - set(normalized_headers.keys())
                 )
 
                 if missing_columns:
@@ -165,7 +178,17 @@ class ExportService:
                         f"Missing columns: {', '.join(sorted(missing_columns))}"
                     ]
 
-                rows = list(reader)
+                rows = []
+
+                for row in reader:
+                    normalized_row = {
+                        "Date": row[normalized_headers["date"]],
+                        "Amount": row[normalized_headers["amount"]],
+                        "Category": row[normalized_headers["category"]],
+                        "Description": row[normalized_headers["description"]],
+                    }
+
+                    rows.append(normalized_row)
 
                 if not rows:
                     return False, [], [
