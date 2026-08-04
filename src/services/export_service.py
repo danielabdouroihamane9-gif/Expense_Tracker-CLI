@@ -98,3 +98,71 @@ class ExportService:
             return f"✓ Exported summary to {filename}"
         except IOError as e:
             return f"✗ Error exporting summary: {e}"
+
+    def read_expenses_csv(self, file_path):
+        """
+        Read expenses from a CSV file.
+
+        Args:
+            file_path (str): Path to CSV file.
+
+        Returns:
+            tuple:
+                bool: Success status
+                list: CSV rows if successful
+                list: Errors if failed
+        """
+
+        required_columns = {
+            "Date",
+            "Amount",
+            "Category",
+            "Description",
+        }
+
+        errors = []
+
+        try:
+            filepath = Path(file_path)
+
+            if not filepath.exists():
+                return False, [], [
+                    "File does not exist."
+                ]
+
+            if filepath.suffix.lower() != ".csv":
+                return False, [], [
+                    "File must be a CSV file."
+                ]
+
+            with open(filepath, "r", newline="") as file:
+                reader = csv.DictReader(file)
+
+                if reader.fieldnames is None:
+                    return False, [], [
+                        "CSV file has no header."
+                    ]
+
+                missing_columns = (
+                    required_columns
+                    - set(reader.fieldnames)
+                )
+
+                if missing_columns:
+                    return False, [], [
+                        f"Missing columns: {', '.join(sorted(missing_columns))}"
+                    ]
+
+                rows = list(reader)
+
+                if not rows:
+                    return False, [], [
+                        "CSV file is empty."
+                    ]
+
+                return True, rows, []
+
+        except IOError as e:
+            return False, [], [
+                f"Error reading CSV file: {e}"
+            ]

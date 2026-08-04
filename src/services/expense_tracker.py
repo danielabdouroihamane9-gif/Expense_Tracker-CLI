@@ -38,6 +38,43 @@ class ExpenseTrackerService:
         except ValueError as e:
             return f"✗ Error: {e}"
 
+    def _is_duplicate_expense(
+        self,
+        date,
+        amount,
+        category,
+        description,
+    ):
+        """
+        Check whether an identical expense already exists.
+
+        An expense is considered a duplicate if it has the same:
+            - date
+            - amount
+            - category
+            - description
+
+        Args:
+            date (str | date): Expense date.
+            amount (float): Expense amount.
+            category (str): Expense category.
+            description (str): Expense description.
+
+        Returns:
+            bool: True if a duplicate exists, otherwise False.
+        """
+
+        for expense in self.expenses:
+            if (
+                expense.date == date
+                and expense.amount == amount
+                and expense.category == category.lower()
+                and expense.description == description
+            ):
+                return True
+
+        return False
+
     def get_all_expenses(self):
         """Return all expenses sorted by date (newest first).
 
@@ -349,3 +386,57 @@ class ExpenseTrackerService:
             f"({expense.category}) "
             f"on {new_date}"
         )
+
+    def import_expenses(self, rows):
+        """
+        Import expenses from CSV rows.
+
+        Args:
+            rows (list): List of dictionaries returned by
+                ExportService.read_expenses_csv().
+
+        Returns:
+            dict: Import summary.
+        """
+
+        imported = 0
+        skipped_duplicates = 0
+        failed = 0
+        errors = []
+
+        for row_number, row in enumerate(rows, start=2):
+            try:
+                expense = Expense(
+                    row["Date"],
+                    row["Amount"],
+                    row["Category"],
+                    row["Description"],
+                )
+
+                if self._is_duplicate_expense(
+                    expense.date,
+                    expense.amount,
+                    expense.category,
+                    expense.description,
+                ):
+                    skipped_duplicates += 1
+                    continue
+
+                self.expenses.append(expense)
+                imported += 1
+
+            except (ValueError, KeyError) as e:
+                failed += 1
+                errors.append(
+                    f"Row {row_number}: {e}"
+                )
+
+        if imported > 0:
+            self.storage.save_expenses(self.expenses)
+
+        return {
+            "imported": imported,
+            "skipped_duplicates": skipped_duplicates,
+            "failed": failed,
+            "errors": errors,
+        }
