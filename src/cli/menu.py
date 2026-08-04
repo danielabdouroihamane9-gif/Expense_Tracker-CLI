@@ -14,6 +14,7 @@ from src.utils import (
     display_expense_statistics,
     display_top_spending_categories,
     display_budget_edit_preview,
+    display_import_summary,
 )
 from src.cli.commands import CommandHandler
 
@@ -734,6 +735,7 @@ class Menu:
 
     def _import_expenses(self):
         """Import expenses from a CSV file."""
+
         print("\n--- Import Expenses from CSV ---")
 
         file_path = self.commands.get_csv_file_path()
@@ -741,5 +743,26 @@ class Menu:
         if file_path is None:
             return
 
-        print(f"\nSelected file: {file_path}")
-        print("\nCSV import service is not implemented yet.")
+        success, rows, errors = (
+            self.export_service.read_expenses_csv(
+                file_path
+            )
+        )
+
+        if not success:
+            print("\n✗ Import failed.\n")
+
+            for error in errors:
+                print(f"• {error}")
+
+            print()
+
+            return
+
+        summary = (
+            self.expense_service.import_expenses(
+                rows
+            )
+        )
+
+        display_import_summary(summary)
