@@ -125,14 +125,26 @@ class ExportService:
         try:
             filepath = Path(file_path)
 
-            if not filepath.exists():
-                return False, [], [
-                    "File does not exist."
-                ]
+            """check if the user leave the file path empty just return to the menu without any error message"""
+            if not file_path.strip():
+                return False, [], []
 
             if filepath.suffix.lower() != ".csv":
                 return False, [], [
                     "File must be a CSV file."
+                ]
+
+            # If only a filename was provided, also search
+            # inside the default exports directory.
+            if not filepath.exists() and not filepath.parent.parts:
+                alternate_path = self.export_dir / filepath.name
+
+                if alternate_path.exists():
+                    filepath = alternate_path
+
+            if not filepath.exists():
+                return False, [], [
+                    "File does not exist."
                 ]
 
             with open(filepath, "r", newline="") as file:
