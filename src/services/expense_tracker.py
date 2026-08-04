@@ -427,10 +427,19 @@ class ExpenseTrackerService:
 
             except (ValueError, KeyError) as e:
                 failed += 1
-                errors.append(
-                    f"Row {row_number}: {e}"
-                )
 
+                errors.append(
+                    "\n".join(
+                        [
+                            f"Row {row_number}",
+                            f"Date        : {row.get('Date', '')}",
+                            f"Amount      : {row.get('Amount', '')}",
+                            f"Category    : {row.get('Category', '')}",
+                            f"Description : {row.get('Description', '')}",
+                            f"Reason      : {e}",
+                        ]
+                    )
+                )
         if imported > 0:
             self.storage.save_expenses(self.expenses)
 
