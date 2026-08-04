@@ -164,18 +164,22 @@ class Menu:
             print("\nExport:")
             print("1. Export Expenses")
             print("2. Export Summary")
+            print("3. Import Expenses")
             print("0. Back")
 
-            choice = input("\nEnter your choice (0-2): ").strip()
+            choice = input("\nEnter your choice (0-3): ").strip()
 
             if choice == "1":
                 self._export_expenses()
             elif choice == "2":
                 self._export_summary()
+            elif choice == "3":
+                self._import_expenses()
             elif choice == "0":
                 break
             else:
-                print("✗ Invalid choice. Enter 0-2.")
+                print("✗ Invalid choice. Enter 0-3.")
+
     def _add_expense(self):
         """Add a new expense."""
         print("\n--- Add Expense ---")
@@ -727,3 +731,15 @@ class Menu:
             )
 
         print(result)
+
+    def _import_expenses(self):
+        """Import expenses from a CSV file."""
+        print("\n--- Import Expenses from CSV ---")
+
+        file_path = self.commands.get_csv_file_path()
+
+        if file_path is None:
+            return
+
+        print(f"\nSelected file: {file_path}")
+        print("\nCSV import service is not implemented yet.")

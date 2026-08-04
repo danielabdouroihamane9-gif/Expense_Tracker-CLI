@@ -160,5 +160,21 @@ class CommandHandler:
                 )
                 continue
 
-
             return start_date, end_date
+
+    def get_csv_file_path(self):
+        """
+        Prompt the user for a CSV file path.
+
+        Returns:
+            str | None: CSV file path, or None if cancelled.
+        """
+        print("\nEnter the CSV file path.")
+        print("Enter 0 to cancel.")
+
+        file_path = input("\nCSV file: ").strip()
+
+        if file_path == "0":
+            return None
+
+        return file_path
