@@ -273,3 +273,33 @@ def display_budget_edit_preview(category, current_amount):
         f"Current amount: "
         f"${current_amount:.2f}"
     )
+
+def display_import_summary(summary):
+    """Display the results of a CSV import."""
+    print(f"\n{'=' * 45}")
+    print("CSV Import Summary")
+    print(f"{'=' * 45}")
+
+    print(
+        f"{'Imported Successfully':<25}"
+        f"{summary['imported']}"
+    )
+
+    print(
+        f"{'Skipped Duplicates':<25}"
+        f"{summary['skipped_duplicates']}"
+    )
+
+    print(
+        f"{'Failed Imports':<25}"
+        f"{summary['failed']}"
+    )
+
+    if summary["errors"]:
+        print("-" * 45)
+        print("Errors:")
+
+        for error in summary["errors"]:
+            print(f"• {error}")
+
+    print(f"{'=' * 45}\n")
