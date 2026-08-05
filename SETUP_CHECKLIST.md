@@ -17,7 +17,6 @@ src/
 ├── cli/              (user interaction)
 └── utils/            (helpers)
 
-tests/                (test suite)
 data/                 (data storage)
 exports/              (CSV exports)
 docs/                 (documentation)
@@ -137,7 +136,7 @@ Should show Git configuration files in this folder only
 ### Test 3: Run the Application
 ```powershell
 .\.venv\Scripts\Activate
-python src/main.py
+python -m src.mainn
 ```
 
 Should start the interactive menu
@@ -375,23 +374,17 @@ python src/main.py
 ### Expected Output
 ```
 ============================================================
-   Expense Tracker CLI - Phase 1
+   Expense Tracker CLI - Manage Your Finances with Ease
 ============================================================
 
-Menu:
-1. Add Expense
-2. View All Expenses
-3. Filter by Category
-4. Monthly Summary
-5. Set Budget
-6. View Budget Status
-7. View All Budgets
-8. Export Expenses to CSV
-9. Export Summary to CSV
+Main Menu:
+1. Expense Management
+2. Budget Management
+3. Reports
+4. Export
 0. Exit
 
-Enter your choice (0-9):
-```
+Enter your choice (0-4): ```
 
 ---
 
@@ -442,6 +435,3 @@ Enter your choice (0-9):
 - **Code examples?** → Check `tests/` folder
 
 ---
-
-**Last Updated:** 2026-06-07
-**Status:** ✅ Complete - Ready to Launch

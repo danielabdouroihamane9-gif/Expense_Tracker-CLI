@@ -11,7 +11,7 @@ Get the expense tracker running in **5 minutes**.
 .\.venv\Scripts\Activate
 
 # 2. Run the app
-python src/main.py
+python -m src.main
 
 # Done! Use the interactive menu
 ```
@@ -71,7 +71,7 @@ pip install -r requirements.txt
 
 ### Step 4: Run
 ```bash
-python src/main.py
+python -m src.main
 ```
 
 ---
@@ -177,7 +177,7 @@ python tests/test_expense_tracker.py
 
 Start tracking expenses:
 ```bash
-python src/main.py
+python -m src.main
 ```
 
 **Have questions?** Check `STRUCTURE.md` for architecture details.

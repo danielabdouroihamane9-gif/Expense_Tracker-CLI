@@ -17,7 +17,7 @@ python src/main.py
 python -m venv .venv
 .\.venv\Scripts\Activate
 pip install -r requirements.txt
-python src/main.py
+python -m src.main
 ```
 
 ### Option C: Run Tests (2 minutes)
@@ -80,7 +80,7 @@ expense-tracker/
 
 #### 👤 First-Time Users (5-15 minutes)
 1. **Start here:** `QUICK_START.md` (5 min) - Get the app running
-2. **Then explore:** Run `python src/main.py` and try a few actions
+2. **Then explore:** Run `python -m src.main` and try a few actions
 3. **Understand structure:** `STRUCTURE.md` (10 min) - See the architecture
 4. **Want to learn?** Read README.md (15 min) - Full project overview
 
@@ -113,7 +113,7 @@ expense-tracker/
 
 **Run the application**
 ```bash
-python src/main.py
+python -m src.main
 ```
 
 **Add an expense**
@@ -299,7 +299,7 @@ This codebase is designed to scale:
 
 ## 💡 Tips for Success
 
-1. **Start simple** - Run `python src/main.py` first
+1. **Start simple** - Run `python -m src.main` first
 2. **Try each feature** - Add expense, view, filter, budget, export
 3. **Check code** - Look at `src/services/expense_tracker.py` to understand CRUD
 4. **Read tests** - `tests/` folder shows how to use the APIs
@@ -310,7 +310,7 @@ This codebase is designed to scale:
 ## ❓ FAQ
 
 **Q: Where do I start?**
-A: Run `python src/main.py` → Try adding an expense → Read README.md
+A: Run `python -m src.main` → Try adding an expense → Read README.md
 
 **Q: How is this project organized?**
 A: Modular architecture with 5 layers (models, services, storage, cli, utils). See `STRUCTURE.md`
@@ -344,7 +344,7 @@ A: Create a service in `src/services/`, add CLI handler in `src/cli/commands.py`
 
 ## 🎯 Next Steps
 
-1. **Try it now:** `python src/main.py`
+1. **Try it now:** `python -m src.main`
 2. **Want to understand?** Read `STRUCTURE.md` (10 min)
 3. **Want to code?** Browse `src/` and `tests/` folders
 4. **Ready to extend?** Follow the patterns in `src/services/` to add features

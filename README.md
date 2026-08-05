@@ -16,7 +16,7 @@ This project represents the foundation of a Python Full-Stack + AI Backend Devel
 .\.venv\Scripts\Activate
 
 # Run the app
-python src/main.py
+python -m src.main
 ```
 
 **That's it!** The interactive menu will guide you through all features.
@@ -25,15 +25,60 @@ python src/main.py
 
 ## 📋 Project Overview
 
-The Expense Tracker CLI demonstrates professional Python development practices by combining:
+The Expense Tracker CLI demonstrates:
 
-- **Object-Oriented Programming** - Clean classes with single responsibility
-- **Separation of Concerns** - Business logic decoupled from CLI logic
-- **Modular Architecture** - Organized into layers (models, services, storage, cli, utils)
-- **Data Persistence** - Automatic JSON save/load across sessions
-- **Input Validation** - Comprehensive error handling and user feedback
-- **Testing** - 35+ automated test cases
-- **Professional Documentation** - Clear, maintainable code structure
+- Object-Oriented Programming using Python classes
+- Separation of concerns between CLI, services, models, storage, and utilities
+- Service-layer architecture for business logic management
+- JSON-based data persistence
+- Input validation and error handling
+- CSV import and export functionality
+- Modular and maintainable project organization
+- Manual functional testing of implemented workflows
+
+---
+
+## Implemented Features
+
+## Expense Management
+
+- Add expenses
+- View all expenses
+- View expense details
+- Edit expenses
+- Delete expenses
+- Clear expenses
+- Search expenses
+- Filter by category
+- Filter by date range
+- Sort expenses
+- Duplicate expenses
+
+
+## Budget Management
+
+- Set budgets
+- Edit budgets
+- View budgets
+- Delete budgets
+- Clear budgets
+- View budget status
+
+
+## Reports
+
+- Monthly expense summary
+- Expense statistics
+- Spending by category
+- Top spending categories
+
+
+## Import and Export
+
+- Export expenses to CSV
+- Export monthly summaries to CSV
+- Import expenses from CSV
+- Detect duplicate expenses during import
 
 ---
 
@@ -45,7 +90,7 @@ expense-tracker/
 ├── src/                          # Application source code
 │   ├── main.py                   # Entry point
 │   │
-│   ├── models/                   # Data layer
+│   ├── models/                   # Application data models
 │   │   └── expense.py           # Expense class with validation
 │   │
 │   ├── services/                 # Business logic layer
@@ -56,23 +101,19 @@ expense-tracker/
 │   ├── storage/                  # Persistence layer
 │   │   └── json_storage.py      # JSON file I/O
 │   │
-│   ├── cli/                      # User interaction layer
+│   ├── cli/                      # Command-line interface layer
 │   │   ├── menu.py              # Interactive menu system
 │   │   └── commands.py          # Command handlers
 │   │
-│   └── utils/                    # Utilities layer
+│   └── utils/                    # Shared validation and formatting utilities
 │       ├── validators.py        # Input validation
 │       └── formatters.py        # Output formatting
 │
-├── tests/                        # Comprehensive test suite
-│   ├── test_expense_tracker.py
-│   └── test_expense_tracker_enhanced.py
-│
-├── data/                         # Data storage (auto-created)
+├── data/                         # JSON data storage
 │   ├── expenses.json
 │   └── budgets.json
 │
-├── exports/                      # CSV exports (auto-created)
+├── exports/                      # Generated CSV files
 │
 ├── docs/                         # Technical documentation
 │
@@ -85,56 +126,6 @@ expense-tracker/
 ```
 
 ---
-
-## ✨ Core Features (Phase 1)
-
-### 1. Add Expenses
-Record transactions with date, amount, category, and description.
-- Full validation for all inputs
-- Default to today's date if not specified
-- Category autocomplete available
-
-### 2. View All Expenses
-Display all recorded expenses in a formatted table (newest first).
-- Easy-to-read layout
-- Total calculation
-- Sorted by date
-
-### 3. Filter by Category
-View expenses for specific categories:
-- **Food** - Dining, groceries
-- **Transport** - Gas, transit, rideshare
-- **Rent** - Housing costs
-- **Utilities** - Bills and services
-- **Entertainment** - Recreation, subscriptions
-- **Healthcare** - Medical expenses
-- **Other** - Miscellaneous
-
-### 4. Monthly Summary
-Generate spending summaries by category for the current month.
-- Breakdown per category
-- Total spending calculation
-- Easy to identify spending patterns
-
-### 5. JSON Persistence
-Automatic data persistence between sessions.
-- All data saved to `data/expenses.json`
-- Budget data saved to `data/budgets.json`
-- Graceful handling of missing files
-- Human-readable JSON format
-
-### 6. Budget Management
-Set and track spending limits per category.
-- Define monthly budgets for each category
-- Real-time spending vs. budget comparison
-- Visual warnings when approaching 80% of budget limit
-
-### 7. CSV Export
-Export expense data for analysis in Excel or Google Sheets.
-- Export individual expense records
-- Export monthly summaries
-- Compatible with all spreadsheet applications
-
 ### 8. Interactive CLI Menu
 User-friendly terminal interface.
 - Clear navigation
@@ -219,29 +210,23 @@ pip install -r requirements.txt
 
 ### 6. Run the Application
 ```bash
-python src/main.py
+python -m src.main
 ```
 
 You should see the main menu:
 ```
 ============================================================
-   Expense Tracker CLI - Phase 1
+   Expense Tracker CLI - Manage Your Finances with Ease
 ============================================================
 
-Menu:
-1. Add Expense
-2. View All Expenses
-3. Filter by Category
-4. Monthly Summary
-5. Set Budget
-6. View Budget Status
-7. View All Budgets
-8. Export Expenses to CSV
-9. Export Summary to CSV
+Main Menu:
+1. Expense Management
+2. Budget Management
+3. Reports
+4. Export
 0. Exit
 
-Enter your choice (0-9):
-```
+Enter your choice (0-4): ```
 
 ---
 
@@ -249,7 +234,7 @@ Enter your choice (0-9):
 
 ### Interactive Mode (Recommended for First-Time Use)
 ```bash
-python src/main.py
+python -m src.main
 ```
 Then select options from the menu.
 
@@ -295,34 +280,6 @@ TOTAL        $950.00
 ```
 
 ---
-
-## 🧪 Running Tests
-
-Execute the complete test suite:
-```bash
-python -m pytest tests/ -v
-```
-
-Or run tests directly:
-```bash
-python tests/test_expense_tracker.py
-python tests/test_expense_tracker_enhanced.py
-```
-
-**Test Coverage:**
-- ✅ Expense validation (date, amount, category, description)
-- ✅ CRUD operations (create, read, update, delete)
-- ✅ Category filtering
-- ✅ Monthly summaries
-- ✅ Budget management
-- ✅ CSV export
-- ✅ JSON persistence
-- ✅ Edge cases and error handling
-
-**Total: 35+ test cases with 100% pass rate**
-
----
-
 ## 📚 Documentation
 
 | File | Purpose | Read Time |
@@ -361,35 +318,93 @@ This project demonstrates practical understanding of:
 
 ---
 
-## 🔄 Future Roadmap
+## Architecture Overview
 
-This codebase is designed to scale. Future phases will be built on this foundation:
+The application follows a layered architecture:
+CLI Layer
+|
+v
+Services Layer
+|
+v
+Models Layer
+|
+v
+Storage Layer
 
-### Phase 2 — Web Fundamentals
-Add `src/api/` with FastAPI routes. Reuse existing business logic.
+### CLI Layer
 
-### Phase 3 — Database Integration
-Replace `src/storage/json_storage.py` with `src/storage/database.py`. No changes needed to business logic!
+Responsible for:
+- User interaction
+- Menu navigation
+- Calling application services
 
-### Phase 4 — Deployment
-Docker containerization and cloud deployment.
+### Services Layer
 
-### Phase 5 — AI Integration
-Add semantic search and AI-powered expense categorization.
+Responsible for:
+- Expense operations
+- Budget operations
+- Reports
+- Import/export logic
+
+### Models Layer
+
+Responsible for:
+- Application data representation
+- Validation during object creation
+
+### Storage Layer
+
+Responsible for:
+- Saving and loading persistent data
+
+Current storage:
+- JSON files
+
+Future storage:
+- Database through Django ORM
 
 ---
 
-## 📊 Project Statistics
+## Future Development
 
-- **Total Code:** 1000+ lines
-- **Main Application:** ~500 lines
-- **Tests:** ~350 lines
-- **Documentation:** Comprehensive
-- **Test Cases:** 35+
-- **Pass Rate:** 100%
-- **Python Version:** 3.10+
-- **External Dependencies:** None (uses standard library only)
+The long-term direction of this project is migration into a full-stack financial application.
 
+Planned evolution:
+
+Phase 2:
+- Web fundamentals
+- HTTP concepts
+- REST API design
+- Django fundamentals
+
+Phase 3:
+- Django REST Framework backend
+- Database integration
+- Authentication
+- API development
+
+Future AI/ML integration:
+- Spending analysis
+- Financial insights
+- Intelligent recommendations
+- Predictive analytics
+---
+
+## Testing Approach
+
+The project is currently verified through manual functional testing.
+
+The following workflows have been manually tested:
+
+- Expense creation and management
+- Budget management
+- Reports generation
+- CSV export
+- CSV import
+- Data persistence
+
+Automated testing infrastructure is not currently included.
 ---
 
 ## ✅ Project Status

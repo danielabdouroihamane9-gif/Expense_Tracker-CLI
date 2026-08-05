@@ -119,25 +119,27 @@ Each layer has a single responsibility and can be tested independently.
 
 ## 🚀 Roadmap for Future Phases
 
-This architecture is designed to scale:
+The long-term direction of this project is migration into a full-stack financial application.
 
-### Phase 2: Web API
-- Add `src/api/` with FastAPI routes
-- Reuse existing services unchanged
-- Add authentication layer
+Planned evolution:
 
-### Phase 3: Database
-- Replace `src/storage/json_storage.py` with `src/storage/database.py`
-- No changes to services or models needed!
+Phase 2:
+- Web fundamentals
+- HTTP concepts
+- REST API design
+- Django fundamentals
 
-### Phase 4: Cloud
-- Docker containerization
-- CI/CD pipelines
+Phase 3:
+- Django REST Framework backend
+- Database integration
+- Authentication
+- API development
 
-### Phase 5: AI
-- Add semantic search
-- AI-powered categorization
-
+Future AI/ML integration:
+- Spending analysis
+- Financial insights
+- Intelligent recommendations
+- Predictive analytics
 ---
 
 ## 📖 How to Read This Documentation
@@ -170,7 +172,7 @@ This architecture is designed to scale:
 
 ## 📝 Document Updates
 
-All documentation reflects the current state of the codebase as of **2026-06-07**.
+All documentation reflects the current state of the codebase as of **2026-08-05**.
 
 - ✅ ARCHITECTURE.md - Updated for modular structure
 - ✅ BUILD_SUMMARY.md - Updated with current implementation
@@ -209,7 +211,6 @@ A: Yes - they're updated whenever significant changes are made
 2. **Understand** → Review BUILD_SUMMARY.md
 3. **Verify** → Check COMPLETION_CHECKLIST.md
 4. **Explore** → Browse the code in `src/` folder
-5. **Learn** → Look at tests in `tests/` folder for usage examples
 
 ---
 

@@ -1,6 +1,6 @@
 # 📚 Complete Documentation Index
 
-**Last Updated:** 2026-06-07  
+**Last Updated:** 2026-08-05  
 **Status:** ✅ ALL DOCUMENTATION CURRENT & ORGANIZED
 
 This file provides a complete map of all documentation for the Expense Tracker project.
@@ -12,7 +12,7 @@ This file provides a complete map of all documentation for the Expense Tracker p
 ### First Time Users?
 → Read **README.md** (15 min)  
 → Follow **QUICK_START.md** (5 min)  
-→ Run: `python src/main.py`
+→ Run: `python -m src.main`
 
 ### Want to Understand the Code?
 → Read **STRUCTURE.md** (15 min)  
@@ -96,10 +96,6 @@ APPLICATION CODE (src/)
 ├── storage/
 ├── cli/
 └── utils/
-
-TESTS (tests/)
-├── test_expense_tracker.py
-└── test_expense_tracker_enhanced.py
 ```
 
 ---
@@ -152,8 +148,6 @@ TESTS (tests/)
 2. **STRUCTURE.md** (10 min) - Organization
 3. **docs/ARCHITECTURE.md** (15 min) - Design patterns
 4. **Browse src/ folder** (15 min) - Code review
-5. **Review tests/** (10 min) - Test coverage
-
 **Result:** ✅ Professional assessment
 
 ---
@@ -322,14 +316,13 @@ PROJECT_INDEX.md (navigate anywhere)
 **Quick Setup:**
 ```bash
 .\.venv\Scripts\Activate
-python src/main.py
+python -m src.main
 ```
 
 **Understand the Code:**
 1. Read STRUCTURE.md
 2. Read docs/ARCHITECTURE.md
 3. Browse src/ folder
-4. Review tests/
 
 **Explore Features:**
 - Add an expense (Menu option 1)
@@ -371,7 +364,7 @@ python src/main.py
 
 ---
 
-**Last Updated:** 2026-06-07  
+**Last Updated:** 2026-08-05  
 **Status:** ✅ Complete and Current  
 **Quality:** ⭐⭐⭐⭐⭐ Production-Ready
 
@@ -386,4 +379,4 @@ python src/main.py
 - **Find Anything:** PROJECT_INDEX.md
 - **Need Help:** PROJECT_INDEX.md FAQ section
 
-**Ready? Run:** `python src/main.py`
+**Ready? Run:** `python -m src.main`

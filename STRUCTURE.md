@@ -1,111 +1,249 @@
-# Project Structure Documentation
+# Project Structure
 
-## Overview
-This is a professional, production-ready expense tracker CLI application built with a modular architecture designed to impress recruiters and serve as a foundation for future roadmap phases.
-
+This document explains the architecture of the Expense Tracker CLI application and the responsibility of each component.
+The project follows a layered architecture that separates user interaction, business logic, data models, persistence, and reusable utilities. This separation improves maintainability and prepares the application for migration to a Django REST Framework backend in future phases.
 ---
 
 ## Directory Structure
 
-```
-expense-tracker/
+```text
+expense_tracker/
+
+├── src/
 │
-├── README.md                          # Project overview and getting started
-├── LICENSE                            # MIT License
-├── .gitignore                         # Git ignore rules
-├── requirements.txt                   # Python dependencies
-│
-├── src/                               # Source code
-│   │
-│   ├── __init__.py                    # Package initialization
-│   ├── main.py                        # Entry point
-│   │
-│   ├── models/                        # Data layer
+│   ├── cli/
 │   │   ├── __init__.py
-│   │   └── expense.py                 # Expense class with validation
+│   │   ├── commands.py
+│   │   └── menu.py
 │   │
-│   ├── services/                      # Business logic layer
+│   ├── models/
 │   │   ├── __init__.py
-│   │   ├── expense_tracker.py         # Core expense operations
-│   │   ├── budget_service.py          # Budget management
-│   │   └── export_service.py          # CSV export functionality
+│   │   └── expense.py
 │   │
-│   ├── storage/                       # Persistence layer
+│   ├── services/
 │   │   ├── __init__.py
-│   │   └── json_storage.py            # JSON data persistence
+│   │   ├── budget_service.py
+│   │   ├── expense_tracker.py
+│   │   └── export_service.py
 │   │
-│   ├── cli/                           # User interaction layer
+│   ├── storage/
 │   │   ├── __init__.py
-│   │   ├── menu.py                    # Main interactive menu
-│   │   └── commands.py                # Command handlers and input validation
+│   │   └── json_storage.py
 │   │
-│   └── utils/                         # Helper utilities
-│       ├── __init__.py
-│       ├── validators.py              # Input validation functions
-│       └── formatters.py              # Output formatting functions
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── formatters.py
+│   │   └── validators.py
+│   │
+│   └── main.py
 │
-├── tests/                             # Test suite
-│   ├── __init__.py
-│   ├── test_expense_tracker.py        # Core tests
-│   └── test_expense_tracker_enhanced.py # Advanced tests
+├── data/
+│   ├── budgets.json
+│   └── expenses.json
 │
-├── docs/                              # Documentation folder
+├── exports/
 │
-├── data/                              # Data storage (gitignored)
-│   ├── expenses.json                  # Expense records
-│   └── budgets.json                   # Budget limits
-│
-└── exports/                           # CSV exports (gitignored)
-    └── *.csv                          # Exported reports
+└── docs/
 ```
 
+## Architecture Overview
+
+The application is organized into five primary layers.
+
+```text
+CLI Layer
+      │
+      ▼
+Services Layer
+      │
+      ▼
+Models Layer
+      │
+      ▼
+Storage Layer
+
+Utilities
+(used by all layers)
 ---
 
-## Architecture Layers
+## CLI Layer (`src/cli`)
 
-### 1. **Models Layer** (`src/models/`)
-- **Purpose**: Define data structures
-- **Files**: `expense.py`
-- **Responsibilities**: Expense class with validation
+The CLI layer is responsible for all user interaction.
 
-### 2. **Services Layer** (`src/services/`)
-- **Purpose**: Implement business logic
-- **Files**:
-  - `expense_tracker.py`: Core CRUD operations for expenses
-  - `budget_service.py`: Budget limit management
-  - `export_service.py`: CSV export functionality
+Responsibilities:
 
-### 3. **Storage Layer** (`src/storage/`)
-- **Purpose**: Handle data persistence
-- **Files**: `json_storage.py`
-- **Responsibilities**: Load/save expenses and budgets to JSON
+- Display menus
+- Collect user input
+- Validate menu choices
+- Call service methods
+- Display formatted output
 
-### 4. **CLI Layer** (`src/cli/`)
-- **Purpose**: User interaction
-- **Files**:
-  - `menu.py`: Interactive menu system
-  - `commands.py`: Command handlers and input collection
+The CLI layer does not contain business logic or persistence logic.
 
-### 5. **Utilities Layer** (`src/utils/`)
-- **Purpose**: Reusable helper functions
-- **Files**:
-  - `validators.py`: Input validation
-  - `formatters.py`: Output formatting and display
+## Services Layer (`src/services`)
 
----
+The service layer contains the application's business logic.
+
+### ExpenseTrackerService
+
+Responsible for:
+
+- Expense CRUD operations
+- Searching expenses
+- Filtering expenses
+- Sorting expenses
+- Monthly summaries
+- Expense statistics
+- Spending by category
+- Top spending categories
+- Duplicate expenses
+- Importing expenses from CSV
+
+### BudgetService
+
+Responsible for:
+
+- Setting budgets
+- Editing budgets
+- Deleting budgets
+- Budget status calculations
+
+### ExportService
+
+Responsible for:
+
+- Exporting expenses to CSV
+- Exporting summaries to CSV
+- Reading CSV files
+- Validating CSV structure
+
+## Models Layer (`src/models`)
+
+The model layer represents the application's data.
+
+Currently the application contains:
+
+### Expense
+
+The Expense model:
+
+- stores expense information
+- validates data during object creation
+- converts objects to dictionaries
+- recreates objects from stored JSON data
+
+This keeps validation close to the data model itself.
+
+## Storage Layer (`src/storage`)
+
+The storage layer is responsible for persistence.
+
+Current implementation:
+
+- expenses.json
+- budgets.json
+
+The storage layer isolates file operations from business logic, making future migration to a relational database straightforward.
+
+## Utilities (`src/utils`)
+
+Reusable helper functions shared across the application.
+
+### validators.py
+
+Provides:
+
+- date validation
+- amount validation
+- category validation
+- description validation
+- budget validation
+
+### formatters.py
+
+Responsible for formatting data displayed to the user, including:
+
+- expense tables
+- summaries
+- budget reports
+- statistics
+- spending reports
+
+## Data Flow
+
+The typical flow of an operation is:
+
+```text
+User
+    │
+    ▼
+Menu
+    │
+    ▼
+Service
+    │
+    ▼
+Model
+    │
+    ▼
+Storage
+```
+
+For example, when adding an expense:
+
+1. The user enters expense information.
+2. The CLI collects the input.
+3. The service validates and processes the request.
+4. An Expense object is created.
+5. The storage layer saves the updated data.
+6. The CLI displays the result.
 
 ## Key Features
 
 ### Phase 1 Capabilities
-✓ Add expenses with validation
-✓ View all expenses
-✓ Filter by category
-✓ Monthly summaries
-✓ Set budget limits
-✓ Budget status alerts
-✓ Export to CSV
-✓ JSON persistence
-✓ Interactive CLI menu
+
+### Expense Management
+
+- ✅ Add Expense
+- ✅ View All Expenses
+- ✅ View Expense Details
+- ✅ Edit Expense
+- ✅ Delete Expense
+- ✅ Clear All Expenses
+- ✅ Search Expenses
+- ✅ Filter by Category
+- ✅ Filter by Date Range
+- ✅ Sort Expenses
+- ✅ Duplicate Expense
+
+---
+
+### Budget Management
+
+- ✅ Set Budget
+- ✅ Edit Budget
+- ✅ View Budgets
+- ✅ Delete Budget
+- ✅ Clear Budgets
+- ✅ Budget Status
+
+---
+
+### Reports
+
+- ✅ Monthly Summary
+- ✅ Expense Statistics
+- ✅ Spending by Category
+- ✅ Top Spending Categories
+
+---
+
+### Import / Export
+
+- ✅ Export Expenses to CSV
+- ✅ Export Monthly Summary to CSV
+- ✅ Import Expenses from CSV
+- ✅ Duplicate Detection During Import
 
 ### Data Validation
 - Date format validation (YYYY-MM-DD)
@@ -121,6 +259,7 @@ expense-tracker/
 - Utilities
 - Entertainment
 - Healthcare
+- Shopping
 - Other
 
 ---
@@ -149,15 +288,8 @@ python -m src.main
 
 Or directly:
 ```bash
-python src/main.py
+python -m src.main
 ```
-
-### 4. Run Tests
-```bash
-python -m pytest tests/
-```
-
----
 
 ## Git Workflow
 
@@ -226,31 +358,19 @@ Each layer has a single responsibility:
 
 ---
 
-## Future Roadmap Integration
+## Future Architecture
 
-This structure is designed to scale for:
+This project is intentionally designed so that only the presentation and persistence layers change during future roadmap phases.
 
-### Phase 2: API Layer
-- Add `src/api/` with Flask/FastAPI routes
-- Implement REST endpoints
-- Add authentication
+Current:
 
-### Phase 3: Database
-- Replace JSON storage with PostgreSQL
-- Create `src/models/database.py`
-- Implement ORM (SQLAlchemy)
+CLI → Services → JSON Storage
 
-### Phase 4: Cloud Deployment
-- Docker containerization
-- CI/CD pipeline setup
-- Cloud platform integration (AWS/GCP/Azure)
+Future:
 
-### Phase 5: AI Integration
-- Semantic search capabilities
-- AI expense categorization
-- Financial advisor agent
-- Natural language processing
+Web API → Services → Django ORM → PostgreSQL
 
+The service layer can be largely reused during the migration to Django REST Framework.
 ---
 
 ## Best Practices Demonstrated
@@ -283,28 +403,9 @@ git push origin main             # Push to remote
 git log --oneline               # View commit history
 
 # Application
-python src/main.py              # Run app
-python -m pytest tests/          # Run tests
+python -m src.main              # Run app
 pip freeze > requirements.txt   # Update requirements
 ```
-
----
-
-## File Responsibilities
-
-| File | Purpose | LOC |
-|------|---------|-----|
-| `src/models/expense.py` | Expense data model | ~50 |
-| `src/services/expense_tracker.py` | Core CRUD logic | ~100 |
-| `src/services/budget_service.py` | Budget management | ~80 |
-| `src/services/export_service.py` | CSV export | ~80 |
-| `src/storage/json_storage.py` | Data persistence | ~70 |
-| `src/cli/menu.py` | Interactive menu | ~150 |
-| `src/cli/commands.py` | Command handlers | ~80 |
-| `src/utils/validators.py` | Validation logic | ~60 |
-| `src/utils/formatters.py` | Display formatting | ~100 |
-
----
 
 ## Code Quality Metrics
 
@@ -312,7 +413,7 @@ pip freeze > requirements.txt   # Update requirements
 - **Maintainability**: 9/10 - Clear structure
 - **Scalability**: 8/10 - Ready for expansion
 - **Documentation**: 9/10 - Comprehensive docstrings
-- **Testing**: 7/10 - Core tests included
+- **Testing manually**: 7/10 - Core tests included
 
 ---
 
@@ -326,5 +427,5 @@ For questions about this structure:
 
 ---
 
-*Last Updated: 2026-06-07*
+*Last Updated: 2026-08-05*
 *Project Version: 1.0.0*

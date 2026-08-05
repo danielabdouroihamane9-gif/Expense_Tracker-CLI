@@ -71,16 +71,12 @@ class Menu:
 
             if choice == "1":
                 self._manage_expenses_menu()
-
             elif choice == "2":
                 self._search_filter_menu()
-
             elif choice == "3":
                 self._sort_expenses()
-
             elif choice == "0":
                 break
-
             else:
                 print("✗ Invalid choice. Enter 0-3.")
 
@@ -102,28 +98,20 @@ class Menu:
 
             if choice == "1":
                 self._add_expense()
-
             elif choice == "2":
                 self._edit_expense()
-
             elif choice == "3":
                 self._duplicate_expense()
-
             elif choice == "4":
                 self._view_all_expenses()
-
             elif choice == "5":
                 self._view_expense_details()
-
             elif choice == "6":
                 self._delete_expense()
-
             elif choice == "7":
                 self._clear_all_expenses()
-
             elif choice == "0":
                 break
-
             else:
                 print("✗ Invalid choice. Enter 0-7.")
 
@@ -147,7 +135,6 @@ class Menu:
                 self._filter_by_date()
             elif choice == "0":
                 break
-
             else:
                 print("✗ Invalid choice. Enter 0-3.")        
 

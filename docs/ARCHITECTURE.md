@@ -46,40 +46,30 @@
 
 ## 🔄 Data Flow Diagram
 
-```
-User Input
-    │
-    ▼
-┌────────────────────┐
-│  Validation        │  ← Checks all rules
-│  Functions         │    - Date format
-│  get_user_*()      │    - Amount positive
-└─────────┬──────────┘    - Category valid
-          │               - Description non-empty
-          ▼
-┌────────────────────┐
-│ Expense Class      │  ← Creates instance
-│ __init__()         │    with validated data
-│ Validation Methods │
-└─────────┬──────────┘
-          │
-          ▼
-┌────────────────────┐
-│ ExpenseTracker     │  ← Manages list
-│ add_expense()      │    of expenses
-│ Internal list[]    │
-└─────────┬──────────┘
-          │
-          ▼
-┌────────────────────┐
-│ Save to JSON       │  ← Persist data
-│ to_dict()          │
-│ save_to_file()     │
-└─────────┬──────────┘
-          │
-          ▼
-    expenses.json
-```
+```text
+                   User
+                     │
+                     ▼
+             CLI Presentation Layer
+                     │
+                     ▼
+            Business Services Layer
+                     │
+                     ▼
+               Domain Models Layer
+                     │
+                     ▼
+              Storage / Persistence
+                     │
+                     ▼
+                 JSON Files
+
+
+Shared Utilities
+──────────────────────────────────────
+Validators
+Formatters
+``````
 
 ## 🎯 Feature Implementation Map
 
@@ -174,13 +164,7 @@ Expense Tracker Project
 │   │   └── get_user_category()
 │   │
 │   └── main() - CLI menu loop
-│
-├── test_expense_tracker.py      (Test suite)
-│   ├── test_expense_validation()
-│   ├── test_tracker_crud()
-│   ├── test_persistence()
-│   └── test_edge_cases()
-│
+││
 ├── expenses.json                (Data file - auto-created)
 │   └── Array of expense objects
 │
