@@ -123,11 +123,11 @@ class ExportService:
         errors = []
 
         try:
-            filepath = Path(file_path)
-
-            """check if the user leave the file path empty just return to the menu without any error message"""
-            if not file_path.strip():
+            # Accept both CLI strings and standard os.PathLike objects.
+            if not str(file_path).strip():
                 return False, [], []
+
+            filepath = Path(file_path)
 
             if filepath.suffix.lower() != ".csv":
                 return False, [], [
