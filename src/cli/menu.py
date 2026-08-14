@@ -1,6 +1,5 @@
 """Main menu for CLI."""
 
-from ast import keyword
 from datetime import datetime
 from src.services import ExpenseTrackerService, BudgetService, ExportService
 from src.utils import (
@@ -315,23 +314,20 @@ class Menu:
             f"Description ({expense.description}): "
         ).strip()
 
-        if amount:
-            amount = float(amount)
-        else:
-            amount = expense.amount
+        try:
+            amount = float(amount) if amount else expense.amount
+            category = category or expense.category
+            description = description or expense.description
+            updated = self.expense_service.update_expense(
+                expense, amount, category, description
+            )
+        except ValueError as error:
+            print(f"\nUnable to update expense: {error}\n")
+            return
 
-        if not category:
-            category = expense.category
-
-        if not description:
-            description = expense.description
-
-        self.expense_service.update_expense(
-            expense,
-            amount,
-            category,
-            description
-        )
+        if not updated:
+            print("\nExpense could not be updated.\n")
+            return
         print("\n✓ Expense updated successfully.\n")
 
     def _view_all_expenses(self):
