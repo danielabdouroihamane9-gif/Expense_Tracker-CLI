@@ -301,9 +301,14 @@ class ExpenseTrackerService:
         Update an existing expense.
         """
 
-        expense.amount = amount
-        expense.category = category
-        expense.description = description
+        if expense not in self.expenses:
+            return False
+
+        # Validate all proposed values before mutating the original object.
+        updated = Expense(str(expense.date), amount, category, description)
+        expense.amount = updated.amount
+        expense.category = updated.category
+        expense.description = updated.description
 
         self.storage.save_expenses(self.expenses)
 
@@ -373,12 +378,15 @@ class ExpenseTrackerService:
         Duplicate an existing expense using a new date.
         """
 
-        self.add_expense(
+        result = self.add_expense(
             date=new_date,
             category=expense.category,
             amount=expense.amount,
             description=expense.description,
         )
+
+        if "Error:" in result:
+            return result
 
         return (
             f"✓ Expense duplicated successfully: "
