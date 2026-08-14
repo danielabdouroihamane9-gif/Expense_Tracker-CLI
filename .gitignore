@@ -22,6 +22,9 @@ dist/
 
 # Pytest cache
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 
 # OS files
 .DS_Store
