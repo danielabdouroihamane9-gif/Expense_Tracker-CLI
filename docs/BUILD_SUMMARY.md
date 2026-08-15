@@ -18,10 +18,9 @@
 
 ## Phase 1 milestone status
 
-Milestones 1 through 6 are complete. Milestone 6 aligned active documentation,
-recorded architecture decisions, and prepared a future Django migration plan.
-Milestone 7 remains the final clean-install, acceptance, merge, tag, and release
-gate.
+All seven Phase 1 milestones are complete. The `v1.0.0` release passed
+clean-install, dependency, quality, acceptance, repository-hygiene, and final
+pull-request checks.
 
 The authoritative state is
 [PHASE_1_UPGRADE_ROADMAP.md](PHASE_1_UPGRADE_ROADMAP.md).
@@ -38,12 +37,6 @@ Those capabilities belong to later roadmap phases. The migration-readiness
 document records preparation without expanding the current implementation
 scope.
 
-## Known release-gate work
-
-- Verify a clean development installation.
-- Re-run all automated and manual acceptance workflows.
-- Review runtime dependencies and remove any that are demonstrably unused.
-- Confirm branch, stash, secret, and generated-file hygiene.
-- Merge, tag, and publish the stable Phase 1 completion report.
-
-See [COMPLETION_CHECKLIST.md](COMPLETION_CHECKLIST.md).
+Release evidence and known limitations are recorded in
+[PHASE_1_RELEASE_REPORT.md](PHASE_1_RELEASE_REPORT.md). The completed gate is
+listed in [COMPLETION_CHECKLIST.md](COMPLETION_CHECKLIST.md).

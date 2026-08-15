@@ -1,6 +1,6 @@
 target-version = "py311"
 line-length = 88
-extend-exclude = [".archive", "tmp"]
+extend-exclude = ["tmp"]
 
 [lint]
 select = [

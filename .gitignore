@@ -40,9 +40,8 @@ settings.json
 # Exports
 *.csv
 
-# archive files
+# Archive files
 *.zip
-.archive/
 
-AI extension logs and local cache
+# AI extension logs and local cache
 .continue/

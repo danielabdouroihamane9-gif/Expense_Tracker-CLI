@@ -22,8 +22,9 @@ domain behavior instead of rewriting it.
 - Python 3.11, 3.12, 3.13, or 3.14
 - A terminal such as PowerShell
 
-The application currently lists `pandas`, `numpy`, and `openpyxl` as runtime
-dependencies. Their continued need is evaluated at the Phase 1 release gate.
+The Phase 1 CLI uses only the Python standard library at runtime. Test,
+coverage, and formatting tools are installed separately from
+`requirements-dev.txt`.
 
 ## Quick start
 
@@ -114,9 +115,10 @@ See [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md) and
 
 ## Roadmap status
 
-This repository is still in **Roadmap Phase 1**. Milestones 1 through 6 are
-complete. Milestone 7 is the release gate. No HTTP API, Django application, database,
-authentication, multi-user system, or AI/ML feature is implemented here.
+Roadmap Phase 1 is complete and published as `v1.0.0`. All seven stabilization
+milestones passed their release gates. No HTTP API, Django application,
+database, authentication, multi-user system, or AI/ML feature is implemented
+in this release.
 
 The authoritative status is
 [docs/PHASE_1_UPGRADE_ROADMAP.md](docs/PHASE_1_UPGRADE_ROADMAP.md). The future
