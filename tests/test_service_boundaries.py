@@ -5,7 +5,7 @@ from pathlib import Path
 
 from src.repositories import BudgetRepository, ExpenseRepository, SettingsRepository
 from src.services import BudgetService, ExpenseTrackerService, SettingsService
-from tests.fakes import InMemoryRepository
+from tests.fakes import FixedClock, InMemoryRepository, SequentialUUIDGenerator
 
 
 def test_services_operate_with_a_non_json_repository():
@@ -14,8 +14,14 @@ def test_services_operate_with_a_non_json_repository():
     assert isinstance(repository, BudgetRepository)
     assert isinstance(repository, SettingsRepository)
 
-    tracker = ExpenseTrackerService(repository, repository)
-    budgets = BudgetService(repository, repository)
+    clock = FixedClock()
+    tracker = ExpenseTrackerService(
+        repository,
+        repository,
+        clock=clock,
+        uuid_generator=SequentialUUIDGenerator(),
+    )
+    budgets = BudgetService(repository, repository, clock=clock)
     settings = SettingsService(repository, repository, repository)
 
     expense = tracker.add_expense("2025-01-01", "12.50", "food", "Lunch")
@@ -45,8 +51,14 @@ def test_cli_module_does_not_import_storage_implementations():
 
 def test_service_results_do_not_contain_cli_status_symbols():
     repository = InMemoryRepository()
-    tracker = ExpenseTrackerService(repository, repository)
-    budgets = BudgetService(repository, repository)
+    clock = FixedClock()
+    tracker = ExpenseTrackerService(
+        repository,
+        repository,
+        clock=clock,
+        uuid_generator=SequentialUUIDGenerator(),
+    )
+    budgets = BudgetService(repository, repository, clock=clock)
     settings = SettingsService(repository, repository, repository)
 
     results = (

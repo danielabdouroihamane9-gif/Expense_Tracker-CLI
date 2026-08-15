@@ -1,6 +1,8 @@
 """Command handlers for CLI."""
 
 from datetime import datetime
+
+from src.providers import Clock
 from src.utils import (
     VALID_CATEGORIES,
     validate_amount,
@@ -12,8 +14,10 @@ from src.utils import (
 class CommandHandler:
     """Handles user input for expense and budget operations."""
 
-    @staticmethod
-    def get_user_date():
+    def __init__(self, clock: Clock):
+        self.clock = clock
+
+    def get_user_date(self):
         """Get and validate date input from user.
 
         Returns:
@@ -25,7 +29,7 @@ class CommandHandler:
             ).strip()
 
             if not date_input:
-                return str(datetime.now().date())
+                return str(self.clock.now().date())
 
             try:
                 datetime.strptime(date_input, "%Y-%m-%d")
@@ -34,7 +38,7 @@ class CommandHandler:
                 print("✗ Invalid format. Please use YYYY-MM-DD")
 
     @staticmethod
-    def get_user_amount(currency="USD"):
+    def get_user_amount(currency):
         """Get and validate amount input from user.
 
         Returns:
@@ -78,7 +82,7 @@ class CommandHandler:
             print("✗ Description cannot be empty")
 
     @staticmethod
-    def get_budget_amount(currency="USD"):
+    def get_budget_amount(currency):
         """Get and validate budget amount from user.
 
         Returns:

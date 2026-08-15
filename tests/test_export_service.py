@@ -4,6 +4,11 @@ import pytest
 
 from src.exceptions import CSVImportError, CurrencyMismatchError, NoDataError
 from src.services import ExportService
+from tests.fakes import FixedClock, make_expense
+
+
+def build_service(export_dir, currency="USD"):
+    return ExportService(export_dir, currency, clock=FixedClock())
 
 
 def read_csv(path):
@@ -12,7 +17,7 @@ def read_csv(path):
 
 
 def test_export_expenses_writes_oldest_first_and_filters(tmp_path, sample_expenses):
-    service = ExportService(tmp_path)
+    service = build_service(tmp_path)
     result = service.export_expenses_to_csv(sample_expenses, "all.csv")
     assert result.record_count == 3 and result.path.name == "all.csv"
     rows = read_csv(tmp_path / "all.csv")
@@ -28,7 +33,7 @@ def test_export_expenses_writes_oldest_first_and_filters(tmp_path, sample_expens
 
 
 def test_export_summary_is_sorted_and_includes_total(tmp_path):
-    service = ExportService(tmp_path)
+    service = build_service(tmp_path)
     assert service.export_summary_to_csv(
         {"transport": 30, "food": 50}, "summary.csv"
     ).kind == "summary"
@@ -43,7 +48,7 @@ def test_export_summary_is_sorted_and_includes_total(tmp_path):
 
 
 def test_read_csv_normalizes_headers_and_supports_export_directory(tmp_path):
-    service = ExportService(tmp_path)
+    service = build_service(tmp_path)
     path = tmp_path / "input.csv"
     path.write_text(" date ,AMOUNT,Category,Description\n2025-01-01,5,food,Lunch\n")
     rows = service.read_expenses_csv(path)
@@ -51,7 +56,7 @@ def test_read_csv_normalizes_headers_and_supports_export_directory(tmp_path):
 
 
 def test_read_csv_preserves_explicit_currency(tmp_path):
-    service = ExportService(tmp_path)
+    service = build_service(tmp_path)
     path = tmp_path / "currencies.csv"
     path.write_text(
         "Date,Amount,Currency,Category,Description\n"
@@ -62,19 +67,17 @@ def test_read_csv_preserves_explicit_currency(tmp_path):
 
 
 def test_export_rejects_expense_in_another_currency(tmp_path):
-    from src.models import Expense
-
-    service = ExportService(tmp_path, currency="USD")
+    service = build_service(tmp_path)
     with pytest.raises(CurrencyMismatchError, match="application currency USD"):
         service.export_expenses_to_csv(
-            [Expense("2025-01-01", 5, "food", "Lunch", currency="EUR")],
+            [make_expense("2025-01-01", 5, "food", "Lunch", currency="EUR")],
             "mixed.csv",
         )
     assert not (tmp_path / "mixed.csv").exists()
 
 
 def test_read_csv_validation_errors(tmp_path):
-    service = ExportService(tmp_path)
+    service = build_service(tmp_path)
     with pytest.raises(CSVImportError, match="cannot be empty"):
         service.read_expenses_csv("")
     with pytest.raises(CSVImportError, match="CSV file"):

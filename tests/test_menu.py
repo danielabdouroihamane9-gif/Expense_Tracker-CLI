@@ -8,9 +8,9 @@ import pytest
 
 from src.cli.menu import Menu
 from src.exceptions import CSVImportError, DomainValidationError
-from src.models import Expense
 from src.services import CurrencyUpdateResult, ExpenseImportResult, ExportResult
 from src.storage import StorageWriteError
+from tests.fakes import FixedClock, make_expense
 
 
 @pytest.fixture
@@ -21,6 +21,7 @@ def menu():
     instance.export_service = MagicMock()
     instance.settings_service = MagicMock()
     instance.commands = MagicMock()
+    instance.clock = FixedClock()
     instance.currency = "USD"
     instance.settings_service.get_currency.return_value = "USD"
     return instance
@@ -122,7 +123,7 @@ def test_add_expense_collects_inputs_and_calls_service(menu, capsys):
     menu.commands.get_user_amount.return_value = "12"
     menu.commands.get_user_category.return_value = "food"
     menu.commands.get_user_description.return_value = "Lunch"
-    menu.expense_service.add_expense.return_value = Expense(
+    menu.expense_service.add_expense.return_value = make_expense(
         "2025-01-01", "12", "food", "Lunch"
     )
     menu._add_expense()
@@ -149,7 +150,7 @@ def test_change_currency_synchronizes_all_menu_services(menu, capsys):
 
 
 def test_select_expense_retries_and_returns_selection(menu, monkeypatch, capsys):
-    expenses = [Expense("2025-01-02", 20, "food", "Dinner")]
+    expenses = [make_expense("2025-01-02", 20, "food", "Dinner")]
     menu.expense_service.get_all_expenses.return_value = expenses
     set_inputs(monkeypatch, "x", "2", "1")
     assert menu._select_expense() is expenses[0]
@@ -159,13 +160,13 @@ def test_select_expense_retries_and_returns_selection(menu, monkeypatch, capsys)
 def test_select_expense_handles_empty_and_cancel(menu, monkeypatch):
     menu.expense_service.get_all_expenses.return_value = []
     assert menu._select_expense() is None
-    menu.expense_service.get_all_expenses.return_value = [Expense("2025-01-01", 1, "food", "x")]
+    menu.expense_service.get_all_expenses.return_value = [make_expense("2025-01-01", 1, "food", "x")]
     set_inputs(monkeypatch, "0")
     assert menu._select_expense() is None
 
 
 def test_sort_expenses_maps_choice(menu, monkeypatch):
-    expense = Expense("2025-01-01", 1, "food", "x")
+    expense = make_expense("2025-01-01", 1, "food", "x")
     menu.expense_service.get_all_expenses.return_value = [expense]
     menu.expense_service.get_sorted_expenses.return_value = [expense]
     set_inputs(monkeypatch, "bad", "3")
@@ -174,7 +175,7 @@ def test_sort_expenses_maps_choice(menu, monkeypatch):
 
 
 def test_delete_and_clear_expenses_respect_confirmation(menu, monkeypatch):
-    expense = Expense("2025-01-01", 1, "food", "x")
+    expense = make_expense("2025-01-01", 1, "food", "x")
     menu._select_expense = MagicMock(return_value=expense)
     set_inputs(monkeypatch, "n")
     menu._delete_expense()
@@ -197,7 +198,7 @@ def test_select_budget_retries_and_delete_confirms(menu, monkeypatch):
 
 
 def test_edit_expense_handles_invalid_amount_without_crashing(menu, monkeypatch, capsys):
-    expense = Expense("2025-01-01", 1, "food", "x")
+    expense = make_expense("2025-01-01", 1, "food", "x")
     menu._select_expense = MagicMock(return_value=expense)
     set_inputs(monkeypatch, "not-a-number", "", "")
     menu._edit_expense()
@@ -206,7 +207,7 @@ def test_edit_expense_handles_invalid_amount_without_crashing(menu, monkeypatch,
 
 
 def test_filter_search_and_reports_delegate(menu, monkeypatch):
-    expense = Expense("2025-01-01", 5, "food", "Lunch")
+    expense = make_expense("2025-01-01", 5, "food", "Lunch")
     menu.commands.get_user_date_range.return_value = (date(2025, 1, 1), date(2025, 1, 31))
     menu.expense_service.get_by_date_range.return_value = [expense]
     menu._filter_by_date()
@@ -228,7 +229,7 @@ def test_filter_search_and_reports_delegate(menu, monkeypatch):
 
 
 def test_export_and_import_orchestration(menu):
-    expense = Expense("2025-01-01", 5, "food", "Lunch")
+    expense = make_expense("2025-01-01", 5, "food", "Lunch")
     menu.commands.get_export_filename.return_value = "out.csv"
     menu.expense_service.get_all_expenses.return_value = [expense]
     menu.export_service.export_expenses_to_csv.return_value = ExportResult(

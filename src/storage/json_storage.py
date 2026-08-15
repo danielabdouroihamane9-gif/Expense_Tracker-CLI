@@ -7,6 +7,7 @@ import warnings
 from pathlib import Path
 
 from src.models import Expense
+from src.providers import Clock, SystemClock, SystemUUIDGenerator, UUIDGenerator
 from src.utils import VALID_CATEGORIES, validate_budget_amount, validate_currency
 
 from .exceptions import (
@@ -22,10 +23,18 @@ class JSONStorage:
     """Persist versioned JSON documents with backups and atomic replacement."""
 
     SCHEMA_VERSION = 2
-    DEFAULT_CURRENCY = "USD"
-
-    def __init__(self, data_dir="data"):
+    def __init__(
+        self,
+        data_dir="data",
+        *,
+        default_currency="USD",
+        clock: Clock | None = None,
+        uuid_generator: UUIDGenerator | None = None,
+    ):
         self.data_dir = Path(data_dir)
+        self.default_currency = validate_currency(default_currency)
+        self.clock = clock or SystemClock()
+        self.uuid_generator = uuid_generator or SystemUUIDGenerator()
         try:
             self.data_dir.mkdir(parents=True, exist_ok=True)
         except OSError as error:
@@ -91,12 +100,21 @@ class JSONStorage:
         )
 
     def load_settings(self):
-        """Load settings, defaulting to USD only for a new repository."""
+        """Load settings, using configured initial currency when absent."""
         return self._load_document(
             self.settings_file,
             self._parse_settings,
-            default={"currency": self.DEFAULT_CURRENCY},
+            default={"currency": self.default_currency},
         )
+
+    def initialize_settings(self):
+        """Persist initial settings once and return the authoritative values."""
+        if (
+            not self.settings_file.exists()
+            and not self._backup_path(self.settings_file).exists()
+        ):
+            self.save_settings({"currency": self.default_currency})
+        return self.load_settings()
 
     def save_settings(self, settings):
         """Atomically persist validated application settings."""
@@ -223,10 +241,16 @@ class JSONStorage:
             )
 
         try:
-            expenses = [
-                Expense.from_dict(record, default_currency=stored_currency)
-                for record in records
-            ]
+            expenses = []
+            for record in records:
+                normalized = dict(record)
+                if normalized.get("id") is None:
+                    normalized["id"] = self.uuid_generator.new_uuid()
+                if normalized.get("created_at") is None:
+                    normalized["created_at"] = self.clock.now()
+                expenses.append(
+                    Expense.from_dict(normalized, default_currency=stored_currency)
+                )
         except (AttributeError, KeyError, TypeError, ValueError) as error:
             raise DataCorruptionError(
                 f"expenses.json contains an invalid expense: {error}"

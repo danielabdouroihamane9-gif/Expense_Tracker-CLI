@@ -1,10 +1,10 @@
 """CSV export service."""
 
 import csv
-from datetime import datetime
 from pathlib import Path
 
 from src.exceptions import CSVImportError, CurrencyMismatchError, ExportError, NoDataError
+from src.providers import Clock
 from src.utils import validate_currency
 
 from .results import ExportResult
@@ -13,13 +13,16 @@ from .results import ExportResult
 class ExportService:
     """Handles exporting expenses and summaries to CSV."""
 
-    def __init__(self, export_dir="exports", currency="USD"):
+    def __init__(self, export_dir, currency, *, clock: Clock):
         """Initialize export service.
 
         Args:
             export_dir (str): Directory for storing export files
+            currency (str): Application currency for CSV data
+            clock (Clock): Provider for deterministic default filenames
         """
         self.export_dir = Path(export_dir)
+        self.clock = clock
         try:
             self.export_dir.mkdir(parents=True, exist_ok=True)
         except OSError as error:
@@ -40,7 +43,7 @@ class ExportService:
             ExportResult: Path and count for the completed export.
         """
         if filename is None:
-            filename = f"expenses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            filename = f"expenses_{self.clock.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
         if category:
             expenses = [e for e in expenses if e.category == category.lower()]
@@ -94,7 +97,7 @@ class ExportService:
         """
         if filename is None:
             if year is None or month is None:
-                today = datetime.now().date()
+                today = self.clock.now().date()
                 year, month = today.year, today.month
             filename = f"summary_{year}_{month:02d}.csv"
 

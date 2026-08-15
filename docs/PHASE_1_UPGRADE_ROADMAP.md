@@ -11,7 +11,7 @@ document are upgrades **within Roadmap Phase 1**. They are not roadmap phases.
 | 1. Data Foundation | Establish stable, migration-ready financial data | Complete |
 | 2. Persistence Reliability | Protect JSON data from corruption and failures | Complete |
 | 3. Repository and Service Boundaries | Decouple business rules from JSON and CLI details | Complete |
-| 4. Application Composition and Configuration | Centralize dependency construction and runtime configuration | Pending |
+| 4. Application Composition and Configuration | Centralize dependency construction and runtime configuration | Complete |
 | 5. Quality Automation | Automate tests, coverage, style checks, and CI | Pending |
 | 6. Documentation and Migration Readiness | Align documentation and prepare the Django handoff | Pending |
 | 7. Phase 1 Release Gate | Complete acceptance and publish a stable Phase 1 release | Pending |
@@ -63,14 +63,23 @@ Completed capabilities:
 
 ## Milestone 4 - Application Composition and Configuration
 
-- Create one application factory or composition root.
-- Construct repositories and services in one location.
-- Inject dependencies instead of constructing them inside services.
-- Centralize data paths, export paths, currency, and runtime configuration.
-- Add injectable clock and UUID generation where deterministic testing needs
-  them.
-- Keep `src/main.py` as a thin entry point.
-- Remove hidden global and hard-coded runtime assumptions.
+Completed capabilities:
+
+- Created one application factory and composition root.
+- Constructed repositories, services, CLI commands, and the menu in one
+  location.
+- Injected repositories and runtime providers instead of constructing them
+  inside services or presentation components.
+- Centralized data paths, export paths, initial currency, and environment
+  configuration.
+- Persisted the resolved initial currency before financial data can depend on
+  it.
+- Added injectable clock and UUID generation for entities, legacy migration,
+  reports, input defaults, and export filenames.
+- Kept `src/main.py` as a thin entry point.
+- Isolated ambient time and UUID calls to system provider implementations.
+- Added architecture, configuration, deterministic-provider, integration, and
+  startup tests.
 
 ## Milestone 5 - Quality Automation
 
