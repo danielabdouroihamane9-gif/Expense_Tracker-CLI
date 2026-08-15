@@ -5,25 +5,33 @@ import pytest
 
 from src.models import Expense
 from src.services import ExpenseTrackerService
-from src.storage import StorageWriteError
+from src.exceptions import CurrencyMismatchError, DomainValidationError
+from src.storage import JSONStorage, StorageWriteError
+
+
+def build_service(data_dir):
+    repository = JSONStorage(data_dir)
+    return ExpenseTrackerService(repository, repository)
 
 
 def make_service(tmp_path, expenses=()):
-    service = ExpenseTrackerService(tmp_path)
+    service = build_service(tmp_path)
     service.expenses = list(expenses)
     return service
 
 
 def test_add_expense_validates_and_persists(tmp_path):
     service = make_service(tmp_path)
-    assert "Expense added" in service.add_expense("2025-05-28", "12.50", "FOOD", "Lunch")
+    expense = service.add_expense("2025-05-28", "12.50", "FOOD", "Lunch")
+    assert expense.amount == 12.50
     assert service.get_expense_count() == 1
-    assert ExpenseTrackerService(tmp_path).expenses == service.expenses
+    assert build_service(tmp_path).expenses == service.expenses
 
 
 def test_invalid_expense_is_reported_and_not_saved(tmp_path):
     service = make_service(tmp_path)
-    assert "Error" in service.add_expense("bad-date", 10, "food", "Lunch")
+    with pytest.raises(DomainValidationError):
+        service.add_expense("bad-date", 10, "food", "Lunch")
     assert service.expenses == []
 
 
@@ -66,8 +74,9 @@ def test_update_delete_duplicate_and_clear_persist(tmp_path):
     original = service.expenses[0]
 
     assert service.update_expense(original, 20, "transport", "Taxi") is True
-    assert ExpenseTrackerService(tmp_path).expenses[0].to_dict()["amount"] == "20.00"
-    assert "duplicated successfully" in service.duplicate_expense(original, "2025-05-29")
+    assert build_service(tmp_path).expenses[0].to_dict()["amount"] == "20.00"
+    duplicate = service.duplicate_expense(original, "2025-05-29")
+    assert duplicate.date == date(2025, 5, 29)
     assert service.get_expense_count() == 2
     assert service.delete_expense(object()) is False
     assert service.delete_expense(original) is True
@@ -76,12 +85,12 @@ def test_update_delete_duplicate_and_clear_persist(tmp_path):
 
 def test_add_rejects_currency_different_from_application_setting(tmp_path):
     service = make_service(tmp_path)
-    result = service.add_expense(
-        "2025-05-28", 10, "food", "Lunch", currency="EUR"
-    )
-    assert "application currency USD" in result
+    with pytest.raises(CurrencyMismatchError, match="application currency USD"):
+        service.add_expense(
+            "2025-05-28", 10, "food", "Lunch", currency="EUR"
+        )
     assert service.expenses == []
-    assert ExpenseTrackerService(tmp_path).expenses == []
+    assert build_service(tmp_path).expenses == []
 
 
 def test_update_is_validated_and_atomic(tmp_path):
@@ -99,8 +108,8 @@ def test_update_is_validated_and_atomic(tmp_path):
 def test_duplicate_does_not_claim_success_when_new_date_is_invalid(tmp_path):
     original = Expense("2025-05-28", 10, "food", "Lunch")
     service = make_service(tmp_path, [original])
-    result = service.duplicate_expense(original, "not-a-date")
-    assert "Error" in result
+    with pytest.raises(DomainValidationError):
+        service.duplicate_expense(original, "not-a-date")
     assert service.get_expense_count() == 1
 
 
@@ -114,11 +123,11 @@ def test_import_reports_success_duplicates_and_bad_rows(tmp_path):
         {"Date": "2025-05-30"},
     ]
     result = service.import_expenses(rows)
-    assert result["imported"] == 1
-    assert result["skipped_duplicates"] == 1
-    assert result["failed"] == 2
-    assert "Row 4" in result["errors"][0]
-    assert ExpenseTrackerService(tmp_path).get_expense_count() == 2
+    assert result.imported == 1
+    assert result.skipped_duplicates == 1
+    assert result.failed == 2
+    assert result.errors[0].row_number == 4
+    assert build_service(tmp_path).get_expense_count() == 2
 
 
 def test_failed_saves_roll_back_every_expense_mutation(tmp_path):
@@ -126,7 +135,7 @@ def test_failed_saves_roll_back_every_expense_mutation(tmp_path):
     second = Expense("2025-05-29", 20, "transport", "Taxi")
     service = make_service(tmp_path, [first, second])
     before = [expense.to_dict() for expense in service.expenses]
-    service.storage.save_expenses = MagicMock(
+    service.expense_repository.save_expenses = MagicMock(
         side_effect=StorageWriteError("simulated disk failure")
     )
 

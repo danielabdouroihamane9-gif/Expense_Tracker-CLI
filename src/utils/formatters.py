@@ -289,24 +289,29 @@ def display_import_summary(summary):
 
     print(
         f"{'Imported Successfully':<25}"
-        f"{summary['imported']}"
+        f"{summary.imported}"
     )
 
     print(
         f"{'Skipped Duplicates':<25}"
-        f"{summary['skipped_duplicates']}"
+        f"{summary.skipped_duplicates}"
     )
 
     print(
         f"{'Failed Imports':<25}"
-        f"{summary['failed']}"
+        f"{summary.failed}"
     )
 
-    if summary["errors"]:
+    if summary.errors:
         print("-" * 45)
         print("Errors:")
 
-        for error in summary["errors"]:
-            print(f"• {error}")
+        for error in summary.errors:
+            print(f"• Row {error.row_number}")
+            print(f"  Date        : {error.date}")
+            print(f"  Amount      : {error.amount}")
+            print(f"  Category    : {error.category}")
+            print(f"  Description : {error.description}")
+            print(f"  Reason      : {error.reason}")
 
     print(f"{'=' * 45}\n")

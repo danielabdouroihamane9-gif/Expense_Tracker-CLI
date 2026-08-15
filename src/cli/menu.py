@@ -1,12 +1,9 @@
 """Main menu for CLI."""
 
 from datetime import datetime
-from src.services import (
-    ExpenseTrackerService,
-    BudgetService,
-    ExportService,
-    SettingsService,
-)
+
+from src.exceptions import CSVImportError, ExpenseTrackerError
+from src.repositories import RepositoryError
 from src.utils import (
     display_expenses_table,
     display_summary,
@@ -23,18 +20,25 @@ from src.utils import (
     format_currency,
 )
 from src.cli.commands import CommandHandler
-from src.storage import PersistenceError
+
 
 class Menu:
     """Interactive menu for expense tracker."""
-    def __init__(self, data_dir="data", export_dir="exports"):
-        """Initialize menu with services."""
-        self.settings_service = SettingsService(data_dir)
+    def __init__(
+        self,
+        settings_service,
+        expense_service,
+        budget_service,
+        export_service,
+        command_handler=None,
+    ):
+        """Initialize with fully constructed application services."""
+        self.settings_service = settings_service
         self.currency = self.settings_service.get_currency()
-        self.expense_service = ExpenseTrackerService(data_dir)
-        self.budget_service = BudgetService(data_dir)
-        self.export_service = ExportService(export_dir, self.currency)
-        self.commands = CommandHandler()
+        self.expense_service = expense_service
+        self.budget_service = budget_service
+        self.export_service = export_service
+        self.commands = command_handler or CommandHandler()
 
     def run(self):
         """Run the main menu loop with submenu architecture."""
@@ -69,9 +73,11 @@ class Menu:
                     break
                 else:
                     print("✗ Invalid choice. Enter 0-5.")
-            except PersistenceError as error:
+            except RepositoryError as error:
                 print(f"\n✗ Data could not be saved or loaded safely: {error}")
                 print("No in-memory changes from the failed operation were kept.")
+            except ExpenseTrackerError as error:
+                print(f"\n✗ Operation could not be completed: {error}")
 
     def _settings_menu(self):
         """Display and update application-wide settings."""
@@ -93,7 +99,10 @@ class Menu:
         """Change currency without relabelling existing financial data."""
         currency = self.commands.get_user_currency()
         result = self.settings_service.set_currency(currency)
-        print(result)
+        if result.changed:
+            print(f"✓ Application currency changed to {result.currency}")
+        else:
+            print(f"✓ Currency is already set to {result.currency}")
 
         configured = self.settings_service.get_currency()
         if configured != self.currency:
@@ -336,8 +345,13 @@ class Menu:
         category = self.commands.get_user_category()
         description = self.commands.get_user_description()
 
-        result = self.expense_service.add_expense(date, amount, category, description)
-        print(result)
+        expense = self.expense_service.add_expense(
+            date, amount, category, description
+        )
+        print(
+            f"✓ Expense added: {expense.currency} {expense.amount:.2f} "
+            f"({expense.category}) on {expense.date}"
+        )
 
     def _edit_expense(self):
         """Edit an existing expense."""
@@ -447,12 +461,15 @@ class Menu:
         display_duplicate_expenses(expense)
         new_date = self.commands.get_user_date()
 
-        message = self.expense_service.duplicate_expense(
+        duplicate = self.expense_service.duplicate_expense(
             expense,
             new_date,
         )
-
-        print(f"\n{message}")
+        print(
+            f"\n✓ Expense duplicated successfully: "
+            f"{duplicate.currency} {duplicate.amount:.2f} "
+            f"({duplicate.category}) on {duplicate.date}"
+        )
 
     def _select_expense(self):
         """
@@ -692,7 +709,10 @@ class Menu:
         amount = self.commands.get_budget_amount(self.currency)
 
         result = self.budget_service.set_budget(category, amount)
-        print(result)
+        print(
+            f"✓ Budget set for {result.category}: "
+            f"{self.currency} {result.amount:.2f}"
+        )
 
     def _edit_budget(self):
         """Edit an existing budget for a category."""
@@ -712,7 +732,10 @@ class Menu:
             category,
             new_amount
         )
-        print(result)
+        print(
+            f"✓ Budget set for {result.category}: "
+            f"{self.currency} {result.amount:.2f}"
+        )
 
     def _select_budget(self):
         """
@@ -857,7 +880,9 @@ class Menu:
         else:
             result = self.export_service.export_expenses_to_csv(expenses)
 
-        print(result)
+        print(
+            f"✓ Exported {result.record_count} expenses to {result.path.name}"
+        )
 
     def _export_summary(self):
         """Export monthly summary to CSV."""
@@ -875,7 +900,7 @@ class Menu:
                 summary, year=today.year, month=today.month
             )
 
-        print(result)
+        print(f"✓ Exported summary to {result.path.name}")
 
     def _import_expenses(self):
         """Import expenses from a CSV file."""
@@ -887,20 +912,10 @@ class Menu:
         if file_path is None:
             return
 
-        success, rows, errors = (
-            self.export_service.read_expenses_csv(
-                file_path
-            )
-        )
-
-        if not success:
-            print("\n✗ Import failed.\n")
-
-            for error in errors:
-                print(f"• {error}")
-
-            print()
-
+        try:
+            rows = self.export_service.read_expenses_csv(file_path)
+        except CSVImportError as error:
+            print(f"\n✗ Import failed: {error}\n")
             return
 
         summary = (

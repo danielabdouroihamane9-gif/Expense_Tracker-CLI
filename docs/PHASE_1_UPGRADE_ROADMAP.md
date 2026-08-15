@@ -10,7 +10,7 @@ document are upgrades **within Roadmap Phase 1**. They are not roadmap phases.
 | --- | --- | --- |
 | 1. Data Foundation | Establish stable, migration-ready financial data | Complete |
 | 2. Persistence Reliability | Protect JSON data from corruption and failures | Complete |
-| 3. Repository and Service Boundaries | Decouple business rules from JSON and CLI details | Pending |
+| 3. Repository and Service Boundaries | Decouple business rules from JSON and CLI details | Complete |
 | 4. Application Composition and Configuration | Centralize dependency construction and runtime configuration | Pending |
 | 5. Quality Automation | Automate tests, coverage, style checks, and CI | Pending |
 | 6. Documentation and Migration Readiness | Align documentation and prepare the Django handoff | Pending |
@@ -49,6 +49,8 @@ Completed capabilities:
 - Document persistence guarantees and recovery procedures.
 
 ## Milestone 3 - Repository and Service Boundaries
+
+Completed capabilities:
 
 - Define repository contracts for expenses, budgets, and settings.
 - Make services depend on repository contracts instead of constructing

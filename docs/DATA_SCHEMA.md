@@ -70,6 +70,12 @@ Missing IDs and creation timestamps are generated in memory. A missing
 currency receives the configured application currency.
 The next successful save upgrades the file to version 2.
 
+The reader also accepts transitional version 2 expense and budget documents
+created during the Phase 1 currency migration that have `schema_version: 2`
+but no top-level `currency`. Their currency is inferred from the application
+setting, while any conflicting expense-level currency is rejected. The next
+successful save adds the required top-level currency field.
+
 Versioned documents must declare integer `schema_version: 2` and contain the
 correct collection type. All records are validated before any are accepted.
 Schema versions greater than 2 are rejected explicitly so an older application

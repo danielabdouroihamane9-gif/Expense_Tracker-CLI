@@ -215,12 +215,12 @@ class JSONStorage:
             stored_currency = configured_currency
         else:
             self._require_versioned_document(document, "expenses")
-            stored_currency = self._document_currency(
-                document, configured_currency, "expenses"
-            )
             records = document.get("expenses")
             if not isinstance(records, list):
                 raise DataCorruptionError("expenses.json field 'expenses' must be a list")
+            stored_currency = self._legacy_compatible_document_currency(
+                document, configured_currency, "expenses"
+            )
 
         try:
             expenses = [
@@ -244,7 +244,9 @@ class JSONStorage:
 
         if "schema_version" in document:
             self._require_versioned_document(document, "budgets")
-            self._document_currency(document, configured_currency, "budgets")
+            self._legacy_compatible_document_currency(
+                document, configured_currency, "budgets"
+            )
             budgets = document.get("budgets")
             if not isinstance(budgets, dict):
                 raise DataCorruptionError("budgets.json field 'budgets' must be an object")
@@ -292,6 +294,13 @@ class JSONStorage:
             raise DataCorruptionError(
                 f"{name}.json uses unsupported schema version {version}"
             )
+
+    @staticmethod
+    def _legacy_compatible_document_currency(document, configured_currency, name):
+        """Infer currency for transitional v2 files created before envelopes."""
+        if "currency" not in document:
+            return configured_currency
+        return JSONStorage._document_currency(document, configured_currency, name)
 
     @staticmethod
     def _document_currency(document, configured_currency, name):

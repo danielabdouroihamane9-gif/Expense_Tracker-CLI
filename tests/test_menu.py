@@ -1,12 +1,15 @@
 """Unit tests for menu routing and CLI orchestration."""
 
 from datetime import date
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
 from src.cli.menu import Menu
+from src.exceptions import CSVImportError, DomainValidationError
 from src.models import Expense
+from src.services import CurrencyUpdateResult, ExpenseImportResult, ExportResult
 from src.storage import StorageWriteError
 
 
@@ -64,6 +67,22 @@ def test_main_menu_reports_persistence_error_and_keeps_running(
     assert "Goodbye" in output
 
 
+def test_main_menu_reports_application_error_and_keeps_running(
+    menu, monkeypatch, capsys
+):
+    menu._expense_menu = MagicMock(
+        side_effect=DomainValidationError("invalid domain input")
+    )
+    set_inputs(monkeypatch, "1", "0")
+
+    menu.run()
+
+    output = capsys.readouterr().out
+    assert "Operation could not be completed" in output
+    assert "invalid domain input" in output
+    assert "Goodbye" in output
+
+
 @pytest.mark.parametrize(
     "method, choice, target",
     [
@@ -103,16 +122,20 @@ def test_add_expense_collects_inputs_and_calls_service(menu, capsys):
     menu.commands.get_user_amount.return_value = "12"
     menu.commands.get_user_category.return_value = "food"
     menu.commands.get_user_description.return_value = "Lunch"
-    menu.expense_service.add_expense.return_value = "added"
+    menu.expense_service.add_expense.return_value = Expense(
+        "2025-01-01", "12", "food", "Lunch"
+    )
     menu._add_expense()
     menu.commands.get_user_amount.assert_called_once_with("USD")
     menu.expense_service.add_expense.assert_called_once_with("2025-01-01", "12", "food", "Lunch")
-    assert "added" in capsys.readouterr().out
+    assert "Expense added" in capsys.readouterr().out
 
 
 def test_change_currency_synchronizes_all_menu_services(menu, capsys):
     menu.commands.get_user_currency.return_value = "KMF"
-    menu.settings_service.set_currency.return_value = "changed"
+    menu.settings_service.set_currency.return_value = CurrencyUpdateResult(
+        "KMF", changed=True
+    )
     menu.settings_service.get_currency.return_value = "KMF"
 
     menu._change_currency()
@@ -122,7 +145,7 @@ def test_change_currency_synchronizes_all_menu_services(menu, capsys):
     assert menu.expense_service.currency == "KMF"
     assert menu.budget_service.currency == "KMF"
     assert menu.export_service.currency == "KMF"
-    assert "changed" in capsys.readouterr().out
+    assert "changed to KMF" in capsys.readouterr().out
 
 
 def test_select_expense_retries_and_returns_selection(menu, monkeypatch, capsys):
@@ -208,14 +231,18 @@ def test_export_and_import_orchestration(menu):
     expense = Expense("2025-01-01", 5, "food", "Lunch")
     menu.commands.get_export_filename.return_value = "out.csv"
     menu.expense_service.get_all_expenses.return_value = [expense]
-    menu.export_service.export_expenses_to_csv.return_value = "ok"
+    menu.export_service.export_expenses_to_csv.return_value = ExportResult(
+        Path("out.csv"), 1, "expenses"
+    )
     menu._export_expenses()
     menu.export_service.export_expenses_to_csv.assert_called_once_with([expense], "out.csv")
 
     menu.commands.get_csv_file_path.return_value = "in.csv"
     rows = [{"Date": "2025-01-01", "Amount": "5", "Category": "food", "Description": "Lunch"}]
-    menu.export_service.read_expenses_csv.return_value = (True, rows, [])
-    menu.expense_service.import_expenses.return_value = {"imported": 1, "skipped_duplicates": 0, "failed": 0, "errors": []}
+    menu.export_service.read_expenses_csv.return_value = rows
+    menu.expense_service.import_expenses.return_value = ExpenseImportResult(
+        imported=1, skipped_duplicates=0, errors=()
+    )
     menu._import_expenses()
     menu.expense_service.import_expenses.assert_called_once_with(rows)
 
@@ -225,7 +252,7 @@ def test_import_cancel_and_read_failure_do_not_import(menu, capsys):
     menu._import_expenses()
     menu.export_service.read_expenses_csv.assert_not_called()
     menu.commands.get_csv_file_path.return_value = "bad.csv"
-    menu.export_service.read_expenses_csv.return_value = (False, [], ["bad file"])
+    menu.export_service.read_expenses_csv.side_effect = CSVImportError("bad file")
     menu._import_expenses()
     menu.expense_service.import_expenses.assert_not_called()
     assert "bad file" in capsys.readouterr().out

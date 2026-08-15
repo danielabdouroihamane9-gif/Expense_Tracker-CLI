@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from src.exceptions import DomainValidationError
 from src.utils.validators import (
     validate_date,
     validate_amount,
@@ -49,7 +50,7 @@ class Expense:
         try:
             return expense_id if isinstance(expense_id, UUID) else UUID(str(expense_id))
         except (TypeError, ValueError, AttributeError) as error:
-            raise ValueError(f"Invalid expense ID: {expense_id}") from error
+            raise DomainValidationError(f"Invalid expense ID: {expense_id}") from error
 
     @staticmethod
     def _validate_created_at(created_at):
@@ -60,9 +61,11 @@ class Expense:
             try:
                 created_at = datetime.fromisoformat(value)
             except ValueError as error:
-                raise ValueError(f"Invalid creation timestamp: {created_at}") from error
+                raise DomainValidationError(
+                    f"Invalid creation timestamp: {created_at}"
+                ) from error
         if not isinstance(created_at, datetime):
-            raise ValueError("Invalid creation timestamp")
+            raise DomainValidationError("Invalid creation timestamp")
         if created_at.tzinfo is None:
             created_at = created_at.replace(tzinfo=timezone.utc)
         return created_at.astimezone(timezone.utc)

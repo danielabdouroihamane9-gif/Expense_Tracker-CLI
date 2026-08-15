@@ -2,25 +2,30 @@
 
 from datetime import datetime
 from decimal import Decimal
+
+from src.exceptions import CurrencyMismatchError, DomainValidationError
 from src.models import Expense
-from src.storage import JSONStorage, PersistenceError
+from src.repositories import ExpenseRepository, RepositoryError, SettingsRepository
 from src.utils import VALID_CATEGORIES
+
+from .results import ExpenseImportError, ExpenseImportResult
 
 
 class ExpenseTrackerService:
     """Manages expense operations with CRUD functionality."""
 
-    def __init__(self, data_dir="data"):
-        """Initialize the expense tracker service.
-
-        Args:
-            data_dir (str): Directory for storing data files
-        """
-        self.storage = JSONStorage(data_dir)
-        self.currency = self.storage.load_settings()["currency"]
-        self.expenses = self.storage.load_expenses()
+    def __init__(
+        self,
+        expense_repository: ExpenseRepository,
+        settings_repository: SettingsRepository,
+    ):
+        """Initialize with persistence-agnostic repository dependencies."""
+        self.expense_repository = expense_repository
+        self.settings_repository = settings_repository
+        self.currency = self.settings_repository.load_settings()["currency"]
+        self.expenses = self.expense_repository.load_expenses()
         if any(expense.currency != self.currency for expense in self.expenses):
-            raise ValueError(
+            raise CurrencyMismatchError(
                 f"Stored expenses must use configured currency {self.currency}"
             )
 
@@ -34,29 +39,23 @@ class ExpenseTrackerService:
             description (str): Expense description
 
         Returns:
-            str: Success or error message
+            Expense: The persisted expense.
         """
+        currency = currency or self.currency
+        expense = Expense(
+            date, amount, category, description, currency=currency
+        )
+        if expense.currency != self.currency:
+            raise CurrencyMismatchError(
+                f"Currency must match application currency {self.currency}"
+            )
+        self.expenses.append(expense)
         try:
-            currency = currency or self.currency
-            expense = Expense(
-                date, amount, category, description, currency=currency
-            )
-            if expense.currency != self.currency:
-                raise ValueError(
-                    f"Currency must match application currency {self.currency}"
-                )
-            self.expenses.append(expense)
-            try:
-                self.storage.save_expenses(self.expenses)
-            except PersistenceError:
-                self.expenses.pop()
-                raise
-            return (
-                f"✓ Expense added: {expense.currency} {expense.amount:.2f} "
-                f"({expense.category}) on {expense.date}"
-            )
-        except ValueError as e:
-            return f"✗ Error: {e}"
+            self.expense_repository.save_expenses(self.expenses)
+        except RepositoryError:
+            self.expenses.pop()
+            raise
+        return expense
 
     def _is_duplicate_expense(
         self,
@@ -294,8 +293,8 @@ class ExpenseTrackerService:
             index = self.expenses.index(expense)
             self.expenses.pop(index)
             try:
-                self.storage.save_expenses(self.expenses)
-            except PersistenceError:
+                self.expense_repository.save_expenses(self.expenses)
+            except RepositoryError:
                 self.expenses.insert(index, expense)
                 raise
             return True
@@ -319,8 +318,8 @@ class ExpenseTrackerService:
         previous_expenses = self.expenses.copy()
         self.expenses.clear()
         try:
-            self.storage.save_expenses(self.expenses)
-        except PersistenceError:
+            self.expense_repository.save_expenses(self.expenses)
+        except RepositoryError:
             self.expenses.extend(previous_expenses)
             raise
         return True
@@ -357,8 +356,8 @@ class ExpenseTrackerService:
         expense.description = updated.description
 
         try:
-            self.storage.save_expenses(self.expenses)
-        except PersistenceError:
+            self.expense_repository.save_expenses(self.expenses)
+        except RepositoryError:
             (
                 expense.amount,
                 expense.category,
@@ -432,22 +431,12 @@ class ExpenseTrackerService:
         Duplicate an existing expense using a new date.
         """
 
-        result = self.add_expense(
+        return self.add_expense(
             date=new_date,
             category=expense.category,
             amount=expense.amount,
             description=expense.description,
             currency=expense.currency,
-        )
-
-        if "Error:" in result:
-            return result
-
-        return (
-            f"✓ Expense duplicated successfully: "
-            f"{expense.currency} {expense.amount:.2f} "
-            f"({expense.category}) "
-            f"on {new_date}"
         )
 
     def import_expenses(self, rows):
@@ -459,12 +448,11 @@ class ExpenseTrackerService:
                 ExportService.read_expenses_csv().
 
         Returns:
-            dict: Import summary.
+            ExpenseImportResult: Neutral import counts and row errors.
         """
 
         imported = 0
         skipped_duplicates = 0
-        failed = 0
         errors = []
 
         for row_number, row in enumerate(rows, start=2):
@@ -478,7 +466,7 @@ class ExpenseTrackerService:
                 )
 
                 if expense.currency != self.currency:
-                    raise ValueError(
+                    raise CurrencyMismatchError(
                         f"Currency must be {self.currency}, got {expense.currency}"
                     )
 
@@ -495,31 +483,26 @@ class ExpenseTrackerService:
                 self.expenses.append(expense)
                 imported += 1
 
-            except (ValueError, KeyError) as e:
-                failed += 1
-
+            except (CurrencyMismatchError, DomainValidationError, KeyError) as error:
                 errors.append(
-                    "\n".join(
-                        [
-                            f"Row {row_number}",
-                            f"Date        : {row.get('Date', '')}",
-                            f"Amount      : {row.get('Amount', '')}",
-                            f"Category    : {row.get('Category', '')}",
-                            f"Description : {row.get('Description', '')}",
-                            f"Reason      : {e}",
-                        ]
+                    ExpenseImportError(
+                        row_number=row_number,
+                        date=str(row.get("Date", "")),
+                        amount=str(row.get("Amount", "")),
+                        category=str(row.get("Category", "")),
+                        description=str(row.get("Description", "")),
+                        reason=str(error),
                     )
                 )
         if imported > 0:
             try:
-                self.storage.save_expenses(self.expenses)
-            except PersistenceError:
+                self.expense_repository.save_expenses(self.expenses)
+            except RepositoryError:
                 del self.expenses[-imported:]
                 raise
 
-        return {
-            "imported": imported,
-            "skipped_duplicates": skipped_duplicates,
-            "failed": failed,
-            "errors": errors,
-        }
+        return ExpenseImportResult(
+            imported=imported,
+            skipped_duplicates=skipped_duplicates,
+            errors=tuple(errors),
+        )

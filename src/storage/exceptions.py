@@ -1,7 +1,9 @@
 """Explicit errors raised by the persistence layer."""
 
+from src.repositories import RepositoryError
 
-class PersistenceError(Exception):
+
+class PersistenceError(RepositoryError):
     """Base class for storage failures that callers must handle."""
 
 

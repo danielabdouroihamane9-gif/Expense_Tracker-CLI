@@ -5,19 +5,30 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from src.exceptions import CurrencyChangeBlockedError, DomainValidationError
 from src.services import BudgetService, ExpenseTrackerService, SettingsService
-from src.storage import StorageWriteError
+from src.storage import JSONStorage, StorageWriteError
+
+
+def build_services(data_dir):
+    repository = JSONStorage(data_dir)
+    return (
+        SettingsService(repository, repository, repository),
+        ExpenseTrackerService(repository, repository),
+        BudgetService(repository, repository),
+    )
 
 
 def test_default_currency_is_usd(tmp_path):
-    settings = SettingsService(tmp_path)
+    settings, _, _ = build_services(tmp_path)
     assert settings.get_currency() == "USD"
 
 
 def test_currency_change_is_persisted_when_financial_data_is_empty(tmp_path):
-    settings = SettingsService(tmp_path)
-    assert "changed to KMF" in settings.set_currency(" kmf ")
-    assert SettingsService(tmp_path).get_currency() == "KMF"
+    settings, _, _ = build_services(tmp_path)
+    result = settings.set_currency(" kmf ")
+    assert result.changed is True and result.currency == "KMF"
+    assert build_services(tmp_path)[0].get_currency() == "KMF"
     assert json.loads((tmp_path / "settings.json").read_text()) == {
         "schema_version": 2,
         "currency": "KMF",
@@ -25,32 +36,33 @@ def test_currency_change_is_persisted_when_financial_data_is_empty(tmp_path):
 
 
 def test_currency_change_is_blocked_when_expenses_exist(tmp_path):
-    tracker = ExpenseTrackerService(tmp_path)
+    settings, tracker, _ = build_services(tmp_path)
     tracker.add_expense("2025-01-01", 10, "food", "Lunch")
 
-    result = SettingsService(tmp_path).set_currency("KMF")
-    assert "cannot be changed" in result
-    assert SettingsService(tmp_path).get_currency() == "USD"
+    with pytest.raises(CurrencyChangeBlockedError, match="cannot be changed"):
+        settings.set_currency("KMF")
+    assert build_services(tmp_path)[0].get_currency() == "USD"
 
 
 def test_currency_change_is_blocked_when_budgets_exist(tmp_path):
-    budgets = BudgetService(tmp_path)
+    settings, _, budgets = build_services(tmp_path)
     budgets.set_budget("food", 100)
 
-    result = SettingsService(tmp_path).set_currency("EUR")
-    assert "cannot be changed" in result
-    assert SettingsService(tmp_path).get_currency() == "USD"
+    with pytest.raises(CurrencyChangeBlockedError, match="cannot be changed"):
+        settings.set_currency("EUR")
+    assert build_services(tmp_path)[0].get_currency() == "USD"
 
 
 def test_invalid_currency_does_not_change_settings(tmp_path):
-    settings = SettingsService(tmp_path)
-    assert "three-letter" in settings.set_currency("US")
+    settings, _, _ = build_services(tmp_path)
+    with pytest.raises(DomainValidationError, match="three-letter"):
+        settings.set_currency("US")
     assert settings.get_currency() == "USD"
 
 
 def test_failed_settings_save_does_not_change_in_memory_currency(tmp_path):
-    settings = SettingsService(tmp_path)
-    settings.storage.save_settings = MagicMock(
+    settings, _, _ = build_services(tmp_path)
+    settings.settings_repository.save_settings = MagicMock(
         side_effect=StorageWriteError("simulated disk failure")
     )
 
