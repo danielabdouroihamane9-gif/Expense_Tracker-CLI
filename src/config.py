@@ -1,12 +1,11 @@
 """Centralized runtime configuration for the expense tracker."""
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping
 
 from src.utils import validate_currency
-
 
 DATA_DIR_ENV = "EXPENSE_TRACKER_DATA_DIR"
 EXPORT_DIR_ENV = "EXPENSE_TRACKER_EXPORT_DIR"

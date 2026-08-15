@@ -12,7 +12,7 @@ document are upgrades **within Roadmap Phase 1**. They are not roadmap phases.
 | 2. Persistence Reliability | Protect JSON data from corruption and failures | Complete |
 | 3. Repository and Service Boundaries | Decouple business rules from JSON and CLI details | Complete |
 | 4. Application Composition and Configuration | Centralize dependency construction and runtime configuration | Complete |
-| 5. Quality Automation | Automate tests, coverage, style checks, and CI | Pending |
+| 5. Quality Automation | Automate tests, coverage, style checks, and CI | Complete |
 | 6. Documentation and Migration Readiness | Align documentation and prepare the Django handoff | Pending |
 | 7. Phase 1 Release Gate | Complete acceptance and publish a stable Phase 1 release | Pending |
 
@@ -83,13 +83,20 @@ Completed capabilities:
 
 ## Milestone 5 - Quality Automation
 
-- Run the complete suite through GitHub Actions.
-- Enforce the coverage threshold automatically.
-- Add linting, formatting, import, and syntax checks.
-- Test the supported Python versions.
-- Ensure automated tests never modify production data.
-- Add persistence recovery integration tests and CLI smoke tests.
-- Document the checks required before merging a pull request.
+Completed capabilities:
+
+- Runs the complete suite through GitHub Actions without duplicate branch and
+  pull request runs.
+- Enforces the 85% coverage threshold locally and in CI.
+- Adds pinned Ruff linting, formatting, and import-order checks.
+- Adds an explicit source and test syntax compilation gate.
+- Tests every supported Python version from 3.11 through 3.14.
+- Fails the suite if automated tests create or modify repository production
+  data.
+- Adds composed persistence recovery and subprocess CLI workflow tests.
+- Verifies test jobs do not modify tracked files.
+- Documents local quality commands, CI gates, and the pull request merge
+  checklist.
 
 ## Milestone 6 - Documentation and Migration Readiness
 

@@ -1,12 +1,12 @@
 """Apply reusable repository contracts to the JSON implementation."""
 
 from src.repositories import BudgetRepository, ExpenseRepository, SettingsRepository
+from tests.fakes import make_json_storage
 from tests.repository_contracts import (
     assert_budget_repository_contract,
     assert_expense_repository_contract,
     assert_settings_repository_contract,
 )
-from tests.fakes import make_json_storage
 
 
 def test_json_storage_implements_declared_repository_protocols(tmp_path):

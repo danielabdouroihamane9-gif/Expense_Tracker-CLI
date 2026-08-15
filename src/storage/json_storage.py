@@ -23,6 +23,7 @@ class JSONStorage:
     """Persist versioned JSON documents with backups and atomic replacement."""
 
     SCHEMA_VERSION = 2
+
     def __init__(
         self,
         data_dir="data",
@@ -235,7 +236,9 @@ class JSONStorage:
             self._require_versioned_document(document, "expenses")
             records = document.get("expenses")
             if not isinstance(records, list):
-                raise DataCorruptionError("expenses.json field 'expenses' must be a list")
+                raise DataCorruptionError(
+                    "expenses.json field 'expenses' must be a list"
+                )
             stored_currency = self._legacy_compatible_document_currency(
                 document, configured_currency, "expenses"
             )
@@ -273,7 +276,9 @@ class JSONStorage:
             )
             budgets = document.get("budgets")
             if not isinstance(budgets, dict):
-                raise DataCorruptionError("budgets.json field 'budgets' must be an object")
+                raise DataCorruptionError(
+                    "budgets.json field 'budgets' must be an object"
+                )
         else:
             budgets = document
 

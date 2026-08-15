@@ -1,9 +1,10 @@
-import pytest
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from src.services import BudgetService
+import pytest
+
 from src.exceptions import DomainValidationError
+from src.services import BudgetService
 from src.storage import StorageWriteError
 from tests.fakes import FixedClock, make_json_storage
 
@@ -26,7 +27,9 @@ def test_budget_crud_and_persistence(tmp_path):
     assert service.clear_all_budgets() is True
 
 
-@pytest.mark.parametrize("category, amount", [("invalid", 10), ("food", 0), ("food", "bad")])
+@pytest.mark.parametrize(
+    "category, amount", [("invalid", 10), ("food", 0), ("food", "bad")]
+)
 def test_invalid_budget_is_reported(category, amount, tmp_path):
     service = build_service(tmp_path)
     with pytest.raises(DomainValidationError):
@@ -38,7 +41,9 @@ def test_budget_status_boundaries(tmp_path):
     service = build_service(tmp_path)
     for category in ("food", "rent", "transport", "shopping"):
         service.set_budget(category, 100)
-    status = service.get_budget_status({"food": 79, "rent": 80, "transport": 100, "shopping": 101})
+    status = service.get_budget_status(
+        {"food": 79, "rent": 80, "transport": 100, "shopping": 101}
+    )
 
     assert status["food"]["warning"] is False
     assert status["rent"]["warning"] is True

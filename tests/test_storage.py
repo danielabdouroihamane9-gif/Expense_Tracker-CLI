@@ -2,6 +2,7 @@ import json
 import os
 from decimal import Decimal
 from pathlib import Path
+
 import pytest
 
 from src.storage import (
@@ -55,7 +56,11 @@ def test_corrupt_json_without_backup_raises_explicit_error(tmp_path):
 
 def test_invalid_expense_records_raise_explicit_error(tmp_path):
     storage = JSONStorage(tmp_path)
-    storage.expenses_file.write_text(json.dumps([{"date": "bad", "amount": 1, "category": "food", "description": "x"}]))
+    storage.expenses_file.write_text(
+        json.dumps(
+            [{"date": "bad", "amount": 1, "category": "food", "description": "x"}]
+        )
+    )
     with pytest.raises(DataCorruptionError, match="invalid expense"):
         storage.load_expenses()
 
@@ -82,10 +87,18 @@ def test_storage_writes_versioned_schema_and_exact_money(tmp_path):
 
 def test_legacy_json_loads_and_is_upgraded_on_next_save(tmp_path):
     storage = JSONStorage(tmp_path)
-    storage.expenses_file.write_text(json.dumps([{
-        "date": "2025-01-02", "amount": 8.5,
-        "category": "food", "description": "Breakfast",
-    }]))
+    storage.expenses_file.write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2025-01-02",
+                    "amount": 8.5,
+                    "category": "food",
+                    "description": "Breakfast",
+                }
+            ]
+        )
+    )
     storage.budgets_file.write_text(json.dumps({"food": 250.0}))
 
     expenses = storage.load_expenses()
@@ -103,10 +116,18 @@ def test_legacy_json_loads_and_is_upgraded_on_next_save(tmp_path):
 def test_legacy_expense_uses_configured_currency(tmp_path):
     storage = JSONStorage(tmp_path)
     storage.save_settings({"currency": "KMF"})
-    storage.expenses_file.write_text(json.dumps([{
-        "date": "2025-01-02", "amount": 1500,
-        "category": "food", "description": "Lunch",
-    }]))
+    storage.expenses_file.write_text(
+        json.dumps(
+            [
+                {
+                    "date": "2025-01-02",
+                    "amount": 1500,
+                    "category": "food",
+                    "description": "Lunch",
+                }
+            ]
+        )
+    )
 
     expenses = storage.load_expenses()
     assert expenses[0].currency == "KMF"
@@ -120,20 +141,30 @@ def test_transitional_v2_documents_without_envelope_currency_are_upgraded(
     tmp_path,
 ):
     storage = JSONStorage(tmp_path)
-    storage.expenses_file.write_text(json.dumps({
-        "schema_version": 2,
-        "expenses": [{
-            "date": "2025-01-02",
-            "amount": "8.50",
-            "currency": "USD",
-            "category": "food",
-            "description": "Breakfast",
-        }],
-    }))
-    storage.budgets_file.write_text(json.dumps({
-        "schema_version": 2,
-        "budgets": {"food": "250.00"},
-    }))
+    storage.expenses_file.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "expenses": [
+                    {
+                        "date": "2025-01-02",
+                        "amount": "8.50",
+                        "currency": "USD",
+                        "category": "food",
+                        "description": "Breakfast",
+                    }
+                ],
+            }
+        )
+    )
+    storage.budgets_file.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "budgets": {"food": "250.00"},
+            }
+        )
+    )
 
     expenses = storage.load_expenses()
     budgets = storage.load_budgets()
@@ -148,16 +179,22 @@ def test_transitional_v2_documents_without_envelope_currency_are_upgraded(
 
 def test_transitional_v2_expense_currency_conflict_is_rejected(tmp_path):
     storage = JSONStorage(tmp_path)
-    storage.expenses_file.write_text(json.dumps({
-        "schema_version": 2,
-        "expenses": [{
-            "date": "2025-01-02",
-            "amount": "8.50",
-            "currency": "EUR",
-            "category": "food",
-            "description": "Breakfast",
-        }],
-    }))
+    storage.expenses_file.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "expenses": [
+                    {
+                        "date": "2025-01-02",
+                        "amount": "8.50",
+                        "currency": "EUR",
+                        "category": "food",
+                        "description": "Breakfast",
+                    }
+                ],
+            }
+        )
+    )
 
     with pytest.raises(DataCorruptionError, match="different currency"):
         storage.load_expenses()
@@ -257,11 +294,15 @@ def test_future_schema_is_rejected_without_falling_back(tmp_path):
     expense = make_expense("2025-01-01", 10, "food", "First")
     storage.save_expenses([expense])
     storage.save_expenses([expense])
-    storage.expenses_file.write_text(json.dumps({
-        "schema_version": 999,
-        "currency": "USD",
-        "expenses": [],
-    }))
+    storage.expenses_file.write_text(
+        json.dumps(
+            {
+                "schema_version": 999,
+                "currency": "USD",
+                "expenses": [],
+            }
+        )
+    )
 
     with pytest.raises(UnsupportedSchemaVersionError, match="version 999"):
         storage.load_expenses()

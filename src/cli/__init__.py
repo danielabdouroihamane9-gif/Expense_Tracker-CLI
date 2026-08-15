@@ -1,6 +1,6 @@
 """CLI module for user interaction."""
 
-from .menu import Menu
 from .commands import CommandHandler
+from .menu import Menu
 
 __all__ = ["Menu", "CommandHandler"]

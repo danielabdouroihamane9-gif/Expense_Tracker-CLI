@@ -1,7 +1,7 @@
 import os
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -22,8 +22,7 @@ def test_module_runs_and_exits_when_windows_output_is_redirected(tmp_path):
     completed = subprocess.run(
         [sys.executable, "-m", "src.main"],
         input=b"0\n",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         cwd=tmp_path,
         env=environment,
         check=False,
@@ -65,8 +64,13 @@ def test_main_runs_menu(monkeypatch):
     composed.run.assert_called_once_with()
 
 
-@pytest.mark.parametrize("error, code, message", [(KeyboardInterrupt(), 0, "interrupted"), (RuntimeError("boom"), 1, "boom")])
-def test_main_converts_failures_to_exit_codes(monkeypatch, capsys, error, code, message):
+@pytest.mark.parametrize(
+    "error, code, message",
+    [(KeyboardInterrupt(), 0, "interrupted"), (RuntimeError("boom"), 1, "boom")],
+)
+def test_main_converts_failures_to_exit_codes(
+    monkeypatch, capsys, error, code, message
+):
     composed = MagicMock()
     composed.run.side_effect = error
     monkeypatch.setattr(

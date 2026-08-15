@@ -1,15 +1,15 @@
 """Expense domain model with validation and stable identity."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from src.exceptions import DomainValidationError
 from src.utils.validators import (
-    validate_date,
     validate_amount,
     validate_category,
-    validate_description,
     validate_currency,
+    validate_date,
+    validate_description,
 )
 
 
@@ -70,8 +70,8 @@ class Expense:
         if not isinstance(created_at, datetime):
             raise DomainValidationError("Invalid creation timestamp")
         if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=timezone.utc)
-        return created_at.astimezone(timezone.utc)
+            created_at = created_at.replace(tzinfo=UTC)
+        return created_at.astimezone(UTC)
 
     @property
     def date(self):

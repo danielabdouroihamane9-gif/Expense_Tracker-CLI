@@ -24,9 +24,10 @@ def test_export_expenses_writes_oldest_first_and_filters(tmp_path, sample_expens
     assert rows[0] == ["Date", "Amount", "Currency", "Category", "Description"]
     assert [row[4] for row in rows[1:]] == ["Concert", "Bus fare", "Lunch"]
 
-    assert service.export_expenses_to_csv(
-        sample_expenses, "food.csv", "FOOD"
-    ).record_count == 1
+    assert (
+        service.export_expenses_to_csv(sample_expenses, "food.csv", "FOOD").record_count
+        == 1
+    )
     assert read_csv(tmp_path / "food.csv")[1][3] == "food"
     with pytest.raises(NoDataError, match="No expenses"):
         service.export_expenses_to_csv([], "empty.csv")
@@ -34,9 +35,10 @@ def test_export_expenses_writes_oldest_first_and_filters(tmp_path, sample_expens
 
 def test_export_summary_is_sorted_and_includes_total(tmp_path):
     service = build_service(tmp_path)
-    assert service.export_summary_to_csv(
-        {"transport": 30, "food": 50}, "summary.csv"
-    ).kind == "summary"
+    assert (
+        service.export_summary_to_csv({"transport": 30, "food": 50}, "summary.csv").kind
+        == "summary"
+    )
     assert read_csv(tmp_path / "summary.csv") == [
         ["Category", "Amount", "Currency"],
         ["Food", "50", "USD"],
@@ -52,15 +54,22 @@ def test_read_csv_normalizes_headers_and_supports_export_directory(tmp_path):
     path = tmp_path / "input.csv"
     path.write_text(" date ,AMOUNT,Category,Description\n2025-01-01,5,food,Lunch\n")
     rows = service.read_expenses_csv(path)
-    assert rows == [{"Date": "2025-01-01", "Amount": "5", "Currency": "USD", "Category": "food", "Description": "Lunch"}]
+    assert rows == [
+        {
+            "Date": "2025-01-01",
+            "Amount": "5",
+            "Currency": "USD",
+            "Category": "food",
+            "Description": "Lunch",
+        }
+    ]
 
 
 def test_read_csv_preserves_explicit_currency(tmp_path):
     service = build_service(tmp_path)
     path = tmp_path / "currencies.csv"
     path.write_text(
-        "Date,Amount,Currency,Category,Description\n"
-        "2025-01-01,5,EUR,food,Lunch\n"
+        "Date,Amount,Currency,Category,Description\n2025-01-01,5,EUR,food,Lunch\n"
     )
     rows = service.read_expenses_csv(path)
     assert rows[0]["Currency"] == "EUR"

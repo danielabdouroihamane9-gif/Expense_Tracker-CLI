@@ -8,7 +8,10 @@ pandas and Django phases.
 Run from the repository root:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest --cov=src --cov-report=term-missing -q
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+.\.venv\Scripts\python.exe -m compileall -q src tests
+.\.venv\Scripts\python.exe -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85 -q
 ```
 
 The suite covers exact decimal arithmetic, stable IDs, UTC creation times,
@@ -18,7 +21,11 @@ denied file operations, repository contracts, persistence-free service tests,
 typed service results, service rollback, budgets, reports, imports, exports,
 CLI routing, centralized application composition, environment-based runtime
 configuration, deterministic clocks and UUID generation, and thin-entry-point
-architecture rules.
+architecture rules. A session-level guard also verifies that automated tests
+do not create or modify files in the repository `data` directory.
+
+See `docs/QUALITY_AUTOMATION.md` for the supported Python matrix, CI jobs, and
+the checks required before merging a pull request.
 
 ## Manual acceptance
 
