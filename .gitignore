@@ -33,6 +33,9 @@ Thumbs.db
 # Data files
 expenses.json
 budgets.json
+settings.json
+*.json.bak
+.*.tmp
 
 # Exports
 *.csv

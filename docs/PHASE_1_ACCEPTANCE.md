@@ -13,7 +13,9 @@ Run from the repository root:
 
 The suite covers exact decimal arithmetic, stable IDs, UTC creation times,
 legacy JSON migration, configurable currency, cross-file currency mismatch
-protection, budgets, reports, imports, exports, and CLI routing.
+protection, atomic replacement, backups, corruption recovery, interrupted and
+denied file operations, service rollback, budgets, reports, imports, exports,
+and CLI routing.
 
 ## Manual acceptance
 
@@ -33,6 +35,13 @@ protection, budgets, reports, imports, exports, and CLI routing.
    refused without modifying data.
 10. Inspect `expenses.json`, `budgets.json`, and `settings.json`. Confirm all
     have `schema_version: 2` and use the same currency.
+11. Make two changes to the same type of data. Confirm the corresponding
+    `.json.bak` file contains the state before the second change.
+12. In a disposable copy of the data directory, replace a primary document
+    with invalid JSON. Restart and confirm the valid backup is restored with a
+    recovery warning.
+13. In a disposable copy, corrupt both the primary and backup. Confirm startup
+    stops with a clear persistence error instead of showing empty data.
 
 Phase 1 is accepted only when the automated suite passes and this manual flow
 behaves as described.

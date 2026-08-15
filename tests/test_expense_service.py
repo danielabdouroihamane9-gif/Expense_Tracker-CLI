@@ -1,9 +1,11 @@
 from datetime import date
+from unittest.mock import MagicMock
 
 import pytest
 
 from src.models import Expense
 from src.services import ExpenseTrackerService
+from src.storage import StorageWriteError
 
 
 def make_service(tmp_path, expenses=()):
@@ -117,3 +119,38 @@ def test_import_reports_success_duplicates_and_bad_rows(tmp_path):
     assert result["failed"] == 2
     assert "Row 4" in result["errors"][0]
     assert ExpenseTrackerService(tmp_path).get_expense_count() == 2
+
+
+def test_failed_saves_roll_back_every_expense_mutation(tmp_path):
+    first = Expense("2025-05-28", 10, "food", "Lunch")
+    second = Expense("2025-05-29", 20, "transport", "Taxi")
+    service = make_service(tmp_path, [first, second])
+    before = [expense.to_dict() for expense in service.expenses]
+    service.storage.save_expenses = MagicMock(
+        side_effect=StorageWriteError("simulated disk failure")
+    )
+
+    with pytest.raises(StorageWriteError):
+        service.add_expense("2025-05-30", 30, "rent", "Rent")
+    assert [expense.to_dict() for expense in service.expenses] == before
+
+    with pytest.raises(StorageWriteError):
+        service.update_expense(first, 99, "shopping", "Changed")
+    assert [expense.to_dict() for expense in service.expenses] == before
+
+    with pytest.raises(StorageWriteError):
+        service.delete_expense(first)
+    assert [expense.to_dict() for expense in service.expenses] == before
+
+    with pytest.raises(StorageWriteError):
+        service.clear_all_expenses()
+    assert [expense.to_dict() for expense in service.expenses] == before
+
+    with pytest.raises(StorageWriteError):
+        service.import_expenses([{
+            "Date": "2025-06-01",
+            "Amount": "40",
+            "Category": "other",
+            "Description": "Imported",
+        }])
+    assert [expense.to_dict() for expense in service.expenses] == before

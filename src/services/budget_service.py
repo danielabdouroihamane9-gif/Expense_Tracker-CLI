@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from src.storage import JSONStorage
+from src.storage import JSONStorage, PersistenceError
 from src.utils import VALID_CATEGORIES, validate_budget_amount
 
 
@@ -35,8 +35,17 @@ class BudgetService:
 
         try:
             amount_float = validate_budget_amount(amount)
+            previous_amount = self.budgets.get(category_lower)
+            existed = category_lower in self.budgets
             self.budgets[category_lower] = amount_float
-            self.storage.save_budgets(self.budgets)
+            try:
+                self.storage.save_budgets(self.budgets)
+            except PersistenceError:
+                if existed:
+                    self.budgets[category_lower] = previous_amount
+                else:
+                    del self.budgets[category_lower]
+                raise
             return (
                 f"✓ Budget set for {category_lower}: "
                 f"{self.currency} {amount_float:.2f}"
@@ -132,8 +141,12 @@ class BudgetService:
         if category not in self.budgets:
             return False
 
-        del self.budgets[category]
-        self.storage.save_budgets(self.budgets)
+        previous_amount = self.budgets.pop(category)
+        try:
+            self.storage.save_budgets(self.budgets)
+        except PersistenceError:
+            self.budgets[category] = previous_amount
+            raise
 
         return True
 
@@ -145,7 +158,12 @@ class BudgetService:
             bool: True when completed successfully.
         """
 
+        previous_budgets = self.budgets.copy()
         self.budgets.clear()
-        self.storage.save_budgets(self.budgets)
+        try:
+            self.storage.save_budgets(self.budgets)
+        except PersistenceError:
+            self.budgets.update(previous_budgets)
+            raise
 
         return True

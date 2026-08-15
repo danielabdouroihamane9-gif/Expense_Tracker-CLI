@@ -23,6 +23,7 @@ from src.utils import (
     format_currency,
 )
 from src.cli.commands import CommandHandler
+from src.storage import PersistenceError
 
 class Menu:
     """Interactive menu for expense tracker."""
@@ -52,21 +53,25 @@ class Menu:
 
             choice = input("\nEnter your choice (0-5): ").strip()
 
-            if choice == "1":
-                self._expense_menu()
-            elif choice == "2":
-                self._budget_menu()
-            elif choice == "3":
-                self._reports_menu()
-            elif choice == "4":
-                self._export_menu()
-            elif choice == "5":
-                self._settings_menu()
-            elif choice == "0":
-                print("\n✓ Goodbye!\n")
-                break
-            else:
-                print("✗ Invalid choice. Enter 0-5.")
+            try:
+                if choice == "1":
+                    self._expense_menu()
+                elif choice == "2":
+                    self._budget_menu()
+                elif choice == "3":
+                    self._reports_menu()
+                elif choice == "4":
+                    self._export_menu()
+                elif choice == "5":
+                    self._settings_menu()
+                elif choice == "0":
+                    print("\n✓ Goodbye!\n")
+                    break
+                else:
+                    print("✗ Invalid choice. Enter 0-5.")
+            except PersistenceError as error:
+                print(f"\n✗ Data could not be saved or loaded safely: {error}")
+                print("No in-memory changes from the failed operation were kept.")
 
     def _settings_menu(self):
         """Display and update application-wide settings."""

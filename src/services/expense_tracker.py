@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 from src.models import Expense
-from src.storage import JSONStorage
+from src.storage import JSONStorage, PersistenceError
 from src.utils import VALID_CATEGORIES
 
 
@@ -46,7 +46,11 @@ class ExpenseTrackerService:
                     f"Currency must match application currency {self.currency}"
                 )
             self.expenses.append(expense)
-            self.storage.save_expenses(self.expenses)
+            try:
+                self.storage.save_expenses(self.expenses)
+            except PersistenceError:
+                self.expenses.pop()
+                raise
             return (
                 f"✓ Expense added: {expense.currency} {expense.amount:.2f} "
                 f"({expense.category}) on {expense.date}"
@@ -287,8 +291,13 @@ class ExpenseTrackerService:
             bool: True if deleted successfully, False otherwise.
         """
         if expense in self.expenses:
-            self.expenses.remove(expense)
-            self.storage.save_expenses(self.expenses)
+            index = self.expenses.index(expense)
+            self.expenses.pop(index)
+            try:
+                self.storage.save_expenses(self.expenses)
+            except PersistenceError:
+                self.expenses.insert(index, expense)
+                raise
             return True
         return False
 
@@ -307,8 +316,13 @@ class ExpenseTrackerService:
         Returns:
             bool: True when completed successfully.
         """
+        previous_expenses = self.expenses.copy()
         self.expenses.clear()
-        self.storage.save_expenses(self.expenses)
+        try:
+            self.storage.save_expenses(self.expenses)
+        except PersistenceError:
+            self.expenses.extend(previous_expenses)
+            raise
         return True
 
     def update_expense(
@@ -333,11 +347,24 @@ class ExpenseTrackerService:
             description,
             currency=expense.currency,
         )
+        previous_values = (
+            expense.amount,
+            expense.category,
+            expense.description,
+        )
         expense.amount = updated.amount
         expense.category = updated.category
         expense.description = updated.description
 
-        self.storage.save_expenses(self.expenses)
+        try:
+            self.storage.save_expenses(self.expenses)
+        except PersistenceError:
+            (
+                expense.amount,
+                expense.category,
+                expense.description,
+            ) = previous_values
+            raise
 
         return True
 
@@ -484,7 +511,11 @@ class ExpenseTrackerService:
                     )
                 )
         if imported > 0:
-            self.storage.save_expenses(self.expenses)
+            try:
+                self.storage.save_expenses(self.expenses)
+            except PersistenceError:
+                del self.expenses[-imported:]
+                raise
 
         return {
             "imported": imported,

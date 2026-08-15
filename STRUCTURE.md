@@ -28,6 +28,7 @@ expense_tracker/
 │   │
 │   ├── storage/
 │   │   ├── __init__.py
+│   │   ├── exceptions.py
 │   │   └── json_storage.py
 │   │
 │   ├── utils/
@@ -143,6 +144,10 @@ Current implementation:
 - expenses.json
 - budgets.json
 - settings.json (application-wide currency, default USD)
+- atomic temporary-file replacement
+- previous-valid-document `.json.bak` backups
+- validated automatic recovery from corrupt or missing primary documents
+- explicit persistence exceptions for the services and CLI
 
 The storage layer isolates file operations from business logic, making future migration to a relational database straightforward.
 

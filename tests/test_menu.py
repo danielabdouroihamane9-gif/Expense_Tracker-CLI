@@ -7,6 +7,7 @@ import pytest
 
 from src.cli.menu import Menu
 from src.models import Expense
+from src.storage import StorageWriteError
 
 
 @pytest.fixture
@@ -45,6 +46,22 @@ def test_menu_routes_to_selected_submenu(menu, monkeypatch, method, choice, targ
     set_inputs(monkeypatch, choice, "0")
     getattr(menu, method)()
     action.assert_called_once_with()
+
+
+def test_main_menu_reports_persistence_error_and_keeps_running(
+    menu, monkeypatch, capsys
+):
+    menu._expense_menu = MagicMock(
+        side_effect=StorageWriteError("simulated disk failure")
+    )
+    set_inputs(monkeypatch, "1", "0")
+
+    menu.run()
+
+    output = capsys.readouterr().out
+    assert "could not be saved or loaded safely" in output
+    assert "No in-memory changes" in output
+    assert "Goodbye" in output
 
 
 @pytest.mark.parametrize(

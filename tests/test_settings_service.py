@@ -1,8 +1,12 @@
 """Application-wide currency configuration tests."""
 
 import json
+from unittest.mock import MagicMock
+
+import pytest
 
 from src.services import BudgetService, ExpenseTrackerService, SettingsService
+from src.storage import StorageWriteError
 
 
 def test_default_currency_is_usd(tmp_path):
@@ -41,4 +45,16 @@ def test_currency_change_is_blocked_when_budgets_exist(tmp_path):
 def test_invalid_currency_does_not_change_settings(tmp_path):
     settings = SettingsService(tmp_path)
     assert "three-letter" in settings.set_currency("US")
+    assert settings.get_currency() == "USD"
+
+
+def test_failed_settings_save_does_not_change_in_memory_currency(tmp_path):
+    settings = SettingsService(tmp_path)
+    settings.storage.save_settings = MagicMock(
+        side_effect=StorageWriteError("simulated disk failure")
+    )
+
+    with pytest.raises(StorageWriteError):
+        settings.set_currency("KMF")
+
     assert settings.get_currency() == "USD"

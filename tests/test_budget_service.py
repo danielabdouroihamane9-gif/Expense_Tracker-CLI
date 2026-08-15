@@ -1,7 +1,9 @@
 import pytest
 from decimal import Decimal
+from unittest.mock import MagicMock
 
 from src.services import BudgetService
+from src.storage import StorageWriteError
 
 
 def test_budget_crud_and_persistence(tmp_path):
@@ -34,3 +36,31 @@ def test_budget_status_boundaries(tmp_path):
     assert status["transport"]["over_budget"] is False
     assert status["shopping"]["over_budget"] is True
     assert status["shopping"]["remaining"] == -1
+
+
+def test_failed_saves_roll_back_every_budget_mutation(tmp_path):
+    service = BudgetService(tmp_path)
+    service.budgets = {
+        "food": Decimal("100.00"),
+        "rent": Decimal("500.00"),
+    }
+    before = service.budgets.copy()
+    service.storage.save_budgets = MagicMock(
+        side_effect=StorageWriteError("simulated disk failure")
+    )
+
+    with pytest.raises(StorageWriteError):
+        service.set_budget("food", 200)
+    assert service.budgets == before
+
+    with pytest.raises(StorageWriteError):
+        service.set_budget("transport", 50)
+    assert service.budgets == before
+
+    with pytest.raises(StorageWriteError):
+        service.delete_budget("food")
+    assert service.budgets == before
+
+    with pytest.raises(StorageWriteError):
+        service.clear_all_budgets()
+    assert service.budgets == before
