@@ -12,15 +12,15 @@ the design against that version's official documentation.
 
 ### Expense
 
-| Current value | Future Django concept | Preservation rule |
-| --- | --- | --- |
-| `id: UUID` | `UUIDField(primary_key=True, default=uuid.uuid4, editable=False)` | Import the existing UUID; generate only for new rows |
-| `occurred_on: date` | `DateField` | Preserve the calendar date exactly |
-| `amount: Decimal` | `DecimalField(decimal_places=2, max_digits=...)` | Choose `max_digits` from a documented business limit; never convert through float |
-| `currency: str` | `CharField(max_length=3)` | Normalize uppercase and enforce the owning account's currency rule |
-| `category: str` | `CharField` with choices | Preserve the current eight normalized values |
-| `description: str` | `CharField` or `TextField` | Decide and document a maximum length before schema creation |
-| `created_at: datetime` | `DateTimeField(default=timezone.now)` | Import the existing UTC timestamp |
+| Current value            | Future Django concept                                               | Preservation rule                                                                  |
+| ------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `id: UUID`             | `UUIDField(primary_key=True, default=uuid.uuid4, editable=False)` | Import the existing UUID; generate only for new rows                               |
+| `occurred_on: date`    | `DateField`                                                       | Preserve the calendar date exactly                                                 |
+| `amount: Decimal`      | `DecimalField(decimal_places=2, max_digits=...)`                  | Choose `max_digits` from a documented business limit; never convert through float |
+| `currency: str`        | `CharField(max_length=3)`                                         | Normalize uppercase and enforce the owning account's currency rule                 |
+| `category: str`        | `CharField` with choices                                          | Preserve the current eight normalized values                                       |
+| `description: str`     | `CharField` or `TextField`                                      | Decide and document a maximum length before schema creation                        |
+| `created_at: datetime` | `DateTimeField(default=timezone.now)`                             | Import the existing UTC timestamp                                                  |
 
 Do not use `auto_now_add` for the initial historical migration. Existing
 creation timestamps must be assignable rather than replaced by import time.
@@ -35,13 +35,13 @@ The current budget document is a category-to-`Decimal` mapping. It has no
 budget UUID, audit timestamp, or owner. A future relational representation
 needs one row per owner/account and category:
 
-| Proposed field | Purpose |
-| --- | --- |
-| owner/account foreign key | Defines whose budget it is once multi-user scope exists |
-| category | One of the supported expense categories |
-| amount | Exact two-decimal positive value |
-| currency or inherited setting | Must follow one explicit ownership rule |
-| created/updated timestamps | Add only after their product meaning is defined |
+| Proposed field                | Purpose                                                 |
+| ----------------------------- | ------------------------------------------------------- |
+| owner/account foreign key     | Defines whose budget it is once multi-user scope exists |
+| category                      | One of the supported expense categories                 |
+| amount                        | Exact two-decimal positive value                        |
+| currency or inherited setting | Must follow one explicit ownership rule                 |
+| created/updated timestamps    | Add only after their product meaning is defined         |
 
 Add a database `UniqueConstraint` for `(owner, category)` and a positive-amount
 check where the selected database supports the intended constraint. Django
