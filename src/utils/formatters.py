@@ -1,9 +1,9 @@
 """Formatting utilities for displaying expense data."""
 
 
-def format_currency(amount):
+def format_currency(amount, currency="USD"):
     """Format amount as currency string."""
-    return f"${amount:.2f}"
+    return f"{currency} {amount:.2f}"
 
 def format_date(date):
     """Format date object as string."""
@@ -16,16 +16,18 @@ def display_expenses_table(expenses, title="Expenses"):
         return
 
     print(f"\n{title}:")
-    print(f"{'No':<4} {'Date':<12} {'Amount':<10} {'Category':<15} {'Description':<30}")
-    print("-" * 67)
+    print(f"{'No':<4} {'Date':<12} {'Amount':<15} {'Category':<15} {'Description':<30}")
+    print("-" * 72)
 
     for index, expense in enumerate(expenses, start=1):
         print(
-            f"{index:<4} {str(expense.date):<12} ${expense.amount:<9.2f} {expense.category:<15} {expense.description:<30}"
+            f"{index:<4} {str(expense.date):<12} "
+            f"{format_currency(expense.amount, expense.currency):<15} "
+            f"{expense.category:<15} {expense.description:<30}"
         )
     print()
 
-def display_summary(summary, year=None, month=None):
+def display_summary(summary, year=None, month=None, currency="USD"):
     """Display monthly summary in formatted output."""
     if not summary:
         print(f"\nNo expenses for {year}-{month:02d}.\n")
@@ -41,13 +43,13 @@ def display_summary(summary, year=None, month=None):
 
     for category in sorted(summary.keys()):
         amount = summary[category]
-        print(f"{category.capitalize():<20} ${amount:<14.2f}")
+        print(f"{category.capitalize():<20} {format_currency(amount, currency):<14}")
 
     print("-" * 50)
-    print(f"{'Total':<20} ${total:<14.2f}")
+    print(f"{'Total':<20} {format_currency(total, currency):<14}")
     print(f"{'=' * 50}\n")
 
-def display_budget_status(status):
+def display_budget_status(status, currency="USD"):
     """Display budget status with warnings."""
     if not status:
         print("\n✗ No budgets set. Use 'set-budget' to set budget limits.\n")
@@ -87,15 +89,15 @@ def display_budget_status(status):
 
         print(
             f"{category.capitalize():<15}"
-            f"${spent:<11.2f}"
-            f"${budget:<11.2f}"
-            f"${remaining:<11.2f}"
+            f"{format_currency(spent, currency):<12}"
+            f"{format_currency(budget, currency):<12}"
+            f"{format_currency(remaining, currency):<12}"
             f"{percentage:<9.2f}"
             f"{status_text:<17}"
         )        
     print(f"{'=' * 80}\n")
 
-def display_budgets(budgets):
+def display_budgets(budgets, currency="USD"):
     """Display budgets in a numbered table."""
 
     if not budgets:
@@ -113,7 +115,7 @@ def display_budgets(budgets):
         print(
             f"{index:<4}"
             f"{category.title():<18}"
-            f"${amount:<9.2f}"
+            f"{format_currency(amount, currency):<12}"
         )
 
     print()
@@ -124,14 +126,19 @@ def display_expense_details(expense):
     print("\nExpense Details")
     print("-" * 30)
 
-    print(f"Date: {expense.date}")
-    print(f"Amount: ${expense.amount:.2f}")
+    created_at = expense.created_at.isoformat().replace("+00:00", "Z")
+
+    print(f"ID: {expense.id}")
+    print(f"Occurred On: {expense.occurred_on}")
+    print(f"Amount: {expense.amount:.2f}")
+    print(f"Currency: {expense.currency}")
     print(f"Category: {expense.category}")
     print(f"Description: {expense.description}")
+    print(f"Created At (UTC): {created_at}")
 
     print()
 
-def display_spending_by_category(spending):
+def display_spending_by_category(spending, currency="USD"):
     """Display total spending grouped by category"""
 
     if not spending:
@@ -147,12 +154,12 @@ def display_spending_by_category(spending):
     for category, total in spending.items():
         print(
             f"{category.title():<20}"
-            f"${total:.2f}"
+            f"{format_currency(total, currency)}"
         )
         grand_total += total
 
     print("-" * 35)
-    print(f"{'Grand Total':<20}${grand_total:.2f}\n")
+    print(f"{'Grand Total':<20}{format_currency(grand_total, currency)}\n")
 
 def display_duplicate_expenses(expense):
     """Display duplicate expenses in a formatted table."""
@@ -163,12 +170,12 @@ def display_duplicate_expenses(expense):
     print("\n--- Duplicate Expense ---")
     print(f"Category    : {expense.category}")
     print(f"Description : {expense.description}")
-    print(f"Amount      : ${expense.amount:.2f}")
+    print(f"Amount      : {format_currency(expense.amount, expense.currency)}")
     print(f"Original Date : {expense.date}")
 
     print("\nEnter the new date.")
 
-def display_expense_statistics(stats):
+def display_expense_statistics(stats, currency="USD"):
     """Display expense statistics in a formatted output."""
     if stats["count"] == 0:
         print("\nNo expenses found.\n")
@@ -182,19 +189,19 @@ def display_expense_statistics(stats):
     )
     print(
         f"{'Total Spending':<25}"
-        f"${stats['total']:.2f}"
+        f"{format_currency(stats['total'], currency)}"
     )
     print(
         f"{'Average Expense':<25}"
-        f"${stats['average']:.2f}"
+        f"{format_currency(stats['average'], currency)}"
     )
     print(
         f"{'Highest Expense':<25}"
-        f"${stats['highest'].amount:.2f}"
+        f"{format_currency(stats['highest'].amount, currency)}"
     )
     print(
         f"{'Lowest Expense':<25}"
-        f"${stats['lowest'].amount:.2f}"
+        f"{format_currency(stats['lowest'].amount, currency)}"
     )
     print("-" * 45)
 
@@ -238,7 +245,7 @@ def display_expense_statistics(stats):
 
     print()
 
-def display_top_spending_categories(categories):
+def display_top_spending_categories(categories, currency="USD"):
     """Display highest spending categories."""
 
     if not categories:
@@ -255,13 +262,13 @@ def display_top_spending_categories(categories):
         print(
             f"{index}. "
             f"{category.title():<20}"
-            f"${amount:.2f}"
+            f"{format_currency(amount, currency)}"
         )
 
     print("-" * 40)
     print()
 
-def display_budget_edit_preview(category, current_amount):
+def display_budget_edit_preview(category, current_amount, currency="USD"):
     """Display information about the budget being edited."""
 
     print(
@@ -271,7 +278,7 @@ def display_budget_edit_preview(category, current_amount):
 
     print(
         f"Current amount: "
-        f"${current_amount:.2f}"
+        f"{format_currency(current_amount, currency)}"
     )
 
 def display_import_summary(summary):

@@ -1,7 +1,12 @@
 """Main menu for CLI."""
 
 from datetime import datetime
-from src.services import ExpenseTrackerService, BudgetService, ExportService
+from src.services import (
+    ExpenseTrackerService,
+    BudgetService,
+    ExportService,
+    SettingsService,
+)
 from src.utils import (
     display_expenses_table,
     display_summary,
@@ -14,16 +19,20 @@ from src.utils import (
     display_top_spending_categories,
     display_budget_edit_preview,
     display_import_summary,
+    validate_amount,
+    format_currency,
 )
 from src.cli.commands import CommandHandler
 
 class Menu:
     """Interactive menu for expense tracker."""
-    def __init__(self):
+    def __init__(self, data_dir="data", export_dir="exports"):
         """Initialize menu with services."""
-        self.expense_service = ExpenseTrackerService()
-        self.budget_service = BudgetService()
-        self.export_service = ExportService()
+        self.settings_service = SettingsService(data_dir)
+        self.currency = self.settings_service.get_currency()
+        self.expense_service = ExpenseTrackerService(data_dir)
+        self.budget_service = BudgetService(data_dir)
+        self.export_service = ExportService(export_dir, self.currency)
         self.commands = CommandHandler()
 
     def run(self):
@@ -38,9 +47,10 @@ class Menu:
             print("2. Budget Management")
             print("3. Reports")
             print("4. Export")
+            print(f"5. Settings (Currency: {self.currency})")
             print("0. Exit")
 
-            choice = input("\nEnter your choice (0-4): ").strip()
+            choice = input("\nEnter your choice (0-5): ").strip()
 
             if choice == "1":
                 self._expense_menu()
@@ -50,11 +60,42 @@ class Menu:
                 self._reports_menu()
             elif choice == "4":
                 self._export_menu()
+            elif choice == "5":
+                self._settings_menu()
             elif choice == "0":
                 print("\n✓ Goodbye!\n")
                 break
             else:
-                print("✗ Invalid choice. Enter 0-4.")
+                print("✗ Invalid choice. Enter 0-5.")
+
+    def _settings_menu(self):
+        """Display and update application-wide settings."""
+        while True:
+            print("\nSettings:")
+            print(f"Current currency: {self.currency}")
+            print("1. Change Currency")
+            print("0. Back")
+
+            choice = input("\nEnter your choice (0-1): ").strip()
+            if choice == "1":
+                self._change_currency()
+            elif choice == "0":
+                return
+            else:
+                print("Invalid choice. Enter 0-1.")
+
+    def _change_currency(self):
+        """Change currency without relabelling existing financial data."""
+        currency = self.commands.get_user_currency()
+        result = self.settings_service.set_currency(currency)
+        print(result)
+
+        configured = self.settings_service.get_currency()
+        if configured != self.currency:
+            self.currency = configured
+            self.expense_service.currency = configured
+            self.budget_service.currency = configured
+            self.export_service.currency = configured
 
     def _expense_menu(self):
         """Expense management submenu."""
@@ -286,7 +327,7 @@ class Menu:
         """Add a new expense."""
         print("\n--- Add Expense ---")
         date = self.commands.get_user_date()
-        amount = self.commands.get_user_amount()
+        amount = self.commands.get_user_amount(self.currency)
         category = self.commands.get_user_category()
         description = self.commands.get_user_description()
 
@@ -315,7 +356,7 @@ class Menu:
         ).strip()
 
         try:
-            amount = float(amount) if amount else expense.amount
+            amount = validate_amount(amount) if amount else expense.amount
             category = category or expense.category
             description = description or expense.description
             updated = self.expense_service.update_expense(
@@ -336,7 +377,7 @@ class Menu:
         display_expenses_table(expenses, "All Expenses")
         if expenses:
             total = sum(e.amount for e in expenses)
-            print(f"Total: ${total:.2f}\n")
+            print(f"Total: {format_currency(total, self.currency)}\n")
 
     def _sort_expenses(self):
         """Display expenses sorted by a selected field."""
@@ -467,7 +508,7 @@ class Menu:
 
         confirm = input(
             f"\nDelete '{expense.description}' "
-            f"(${expense.amount:.2f})? (y/n): "
+            f"({format_currency(expense.amount, expense.currency)})? (y/n): "
         ).strip().lower()
 
         if confirm != "y":
@@ -535,7 +576,7 @@ class Menu:
         )
 
         print(
-            f"Total: ${total:.2f}\n"
+            f"Total: {format_currency(total, self.currency)}\n"
         )
 
     def _filter_by_category(self):
@@ -545,7 +586,7 @@ class Menu:
         display_expenses_table(expenses, f"Expenses - {category.capitalize()}")
         if expenses:
             total = sum(e.amount for e in expenses)
-            print(f"Total: ${total:.2f}\n")
+            print(f"Total: {format_currency(total, self.currency)}\n")
 
     def _search_expenses(self):
         """
@@ -572,7 +613,7 @@ class Menu:
             for expense in expenses
         )
 
-        print(f"Total: ${total:.2f}\n")
+        print(f"Total: {format_currency(total, self.currency)}\n")
 
     def _monthly_summary(self):
         """Display monthly summary based on user-requested year and month."""
@@ -604,7 +645,7 @@ class Menu:
 
         # 3. Fetch and display data using the user's selected dates
         summary = self.expense_service.get_monthly_summary(year, month)
-        display_summary(summary, year, month)
+        display_summary(summary, year, month, self.currency)
 
     def _spending_by_category(self):
         """
@@ -613,7 +654,7 @@ class Menu:
         print("\n--- Spending by Category ---")
 
         spending = self.expense_service.get_spending_by_category()       
-        display_spending_by_category(spending)
+        display_spending_by_category(spending, self.currency)
 
     def _top_spending_categories(self):
         """Display highest spending categories."""
@@ -623,7 +664,7 @@ class Menu:
             .get_top_spending_categories()
         )
 
-        display_top_spending_categories(categories)
+        display_top_spending_categories(categories, self.currency)
 
     def _expense_statistics(self):
         """
@@ -637,13 +678,13 @@ class Menu:
             .get_expense_statistics()
         )
 
-        display_expense_statistics(stats)
+        display_expense_statistics(stats, self.currency)
 
     def _set_budget(self):
         """Set a budget limit for a category."""
         print("\n--- Set Budget ---")
         category = self.commands.get_user_category()
-        amount = self.commands.get_budget_amount()
+        amount = self.commands.get_budget_amount(self.currency)
 
         result = self.budget_service.set_budget(category, amount)
         print(result)
@@ -658,7 +699,7 @@ class Menu:
 
         category, current_amount = budget
 
-        display_budget_edit_preview(category, current_amount)
+        display_budget_edit_preview(category, current_amount, self.currency)
 
         new_amount = self.commands.get_budget_amount()
 
@@ -694,7 +735,7 @@ class Menu:
             print(
                 f"{index}. "
                 f"{category.title():<15}"
-                f"${budgets[category]:.2f}"
+                f"{format_currency(budgets[category], self.currency)}"
             )
 
         while True:
@@ -741,7 +782,7 @@ class Menu:
         confirm = input(
             f"\nDelete budget for "
             f"'{category.title()}' "
-            f"(${amount:.2f})? (y/n): "
+            f"({format_currency(amount, self.currency)})? (y/n): "
         ).strip().lower()
 
         if confirm != "y":
@@ -793,12 +834,12 @@ class Menu:
         status = self.budget_service.get_budget_status(
             monthly_summary, today.year, today.month
         )
-        display_budget_status(status)
+        display_budget_status(status, self.currency)
 
     def _view_all_budgets(self):
         """View all set budgets."""
         budgets = self.budget_service.get_all_budgets()
-        display_budgets(budgets)
+        display_budgets(budgets, self.currency)
 
     def _export_expenses(self):
         """Export expenses to CSV."""

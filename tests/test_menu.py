@@ -15,7 +15,10 @@ def menu():
     instance.expense_service = MagicMock()
     instance.budget_service = MagicMock()
     instance.export_service = MagicMock()
+    instance.settings_service = MagicMock()
     instance.commands = MagicMock()
+    instance.currency = "USD"
+    instance.settings_service.get_currency.return_value = "USD"
     return instance
 
 
@@ -29,6 +32,7 @@ def set_inputs(monkeypatch, *values):
     [
         ("run", "1", "_expense_menu"), ("run", "2", "_budget_menu"),
         ("run", "3", "_reports_menu"), ("run", "4", "_export_menu"),
+        ("run", "5", "_settings_menu"),
         ("_expense_menu", "1", "_manage_expenses_menu"), ("_expense_menu", "2", "_search_filter_menu"),
         ("_expense_menu", "3", "_sort_expenses"),
         ("_reports_menu", "1", "_expense_reports_menu"), ("_reports_menu", "2", "_budget_reports_menu"),
@@ -70,7 +74,7 @@ def test_submenu_routes_to_selected_action(menu, monkeypatch, method, choice, ta
     action.assert_called_once_with()
 
 
-@pytest.mark.parametrize("method", ["run", "_expense_menu", "_manage_expenses_menu", "_search_filter_menu", "_budget_menu", "_reports_menu", "_expense_reports_menu", "_budget_reports_menu", "_export_menu", "_export_data_menu", "_import_data_menu"])
+@pytest.mark.parametrize("method", ["run", "_settings_menu", "_expense_menu", "_manage_expenses_menu", "_search_filter_menu", "_budget_menu", "_reports_menu", "_expense_reports_menu", "_budget_reports_menu", "_export_menu", "_export_data_menu", "_import_data_menu"])
 def test_menus_reject_invalid_choice_then_allow_back(menu, monkeypatch, capsys, method):
     set_inputs(monkeypatch, "invalid", "0")
     getattr(menu, method)()
@@ -84,8 +88,24 @@ def test_add_expense_collects_inputs_and_calls_service(menu, capsys):
     menu.commands.get_user_description.return_value = "Lunch"
     menu.expense_service.add_expense.return_value = "added"
     menu._add_expense()
+    menu.commands.get_user_amount.assert_called_once_with("USD")
     menu.expense_service.add_expense.assert_called_once_with("2025-01-01", "12", "food", "Lunch")
     assert "added" in capsys.readouterr().out
+
+
+def test_change_currency_synchronizes_all_menu_services(menu, capsys):
+    menu.commands.get_user_currency.return_value = "KMF"
+    menu.settings_service.set_currency.return_value = "changed"
+    menu.settings_service.get_currency.return_value = "KMF"
+
+    menu._change_currency()
+
+    menu.settings_service.set_currency.assert_called_once_with("KMF")
+    assert menu.currency == "KMF"
+    assert menu.expense_service.currency == "KMF"
+    assert menu.budget_service.currency == "KMF"
+    assert menu.export_service.currency == "KMF"
+    assert "changed" in capsys.readouterr().out
 
 
 def test_select_expense_retries_and_returns_selection(menu, monkeypatch, capsys):

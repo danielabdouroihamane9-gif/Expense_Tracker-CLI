@@ -64,12 +64,21 @@ def test_update_delete_duplicate_and_clear_persist(tmp_path):
     original = service.expenses[0]
 
     assert service.update_expense(original, 20, "transport", "Taxi") is True
-    assert ExpenseTrackerService(tmp_path).expenses[0].to_dict()["amount"] == 20
+    assert ExpenseTrackerService(tmp_path).expenses[0].to_dict()["amount"] == "20.00"
     assert "duplicated successfully" in service.duplicate_expense(original, "2025-05-29")
     assert service.get_expense_count() == 2
     assert service.delete_expense(object()) is False
     assert service.delete_expense(original) is True
     assert service.clear_all_expenses() is True
+
+
+def test_add_rejects_currency_different_from_application_setting(tmp_path):
+    service = make_service(tmp_path)
+    result = service.add_expense(
+        "2025-05-28", 10, "food", "Lunch", currency="EUR"
+    )
+    assert "application currency USD" in result
+    assert service.expenses == []
     assert ExpenseTrackerService(tmp_path).expenses == []
 
 

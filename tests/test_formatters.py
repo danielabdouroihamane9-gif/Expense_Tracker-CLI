@@ -13,11 +13,16 @@ from src.utils.formatters import (
 
 @pytest.fixture
 def expense():
-    return Expense("2025-01-02", 12.5, "food", "Lunch")
+    return Expense(
+        "2025-01-02", 12.5, "food", "Lunch",
+        expense_id="12345678-1234-5678-1234-567812345678",
+        currency="USD", created_at="2025-01-02T10:30:00Z",
+    )
 
 
 def test_basic_formatters():
-    assert format_currency(12.5) == "$12.50"
+    assert format_currency(12.5) == "USD 12.50"
+    assert format_currency(12.5, "KMF") == "KMF 12.50"
     assert format_date("2025-01-02") == "2025-01-02"
 
 
@@ -28,7 +33,12 @@ def test_expense_displays(expense, capsys):
     display_expense_details(expense)
     display_duplicate_expenses(expense)
     output = capsys.readouterr().out
-    assert "Items" in output and "$12.50" in output and "Lunch" in output
+    assert "Items" in output and "USD 12.50" in output and "Lunch" in output
+    assert "ID: 12345678-1234-5678-1234-567812345678" in output
+    assert "Occurred On: 2025-01-02" in output
+    assert "Amount: 12.50" in output
+    assert "Currency: USD" in output
+    assert "Created At (UTC): 2025-01-02T10:30:00Z" in output
 
 
 def test_summary_and_category_displays(capsys):
@@ -51,7 +61,7 @@ def test_budget_displays(capsys):
     display_budget_edit_preview("food", 100)
     display_budget_status({"food": {"spent": 80, "budget": 100, "remaining": 20, "percentage": 80, "warning": True, "over_budget": False, "limit": False}})
     output = capsys.readouterr().out
-    assert "Food" in output and "$100.00" in output and "80.00" in output
+    assert "Food" in output and "USD 100.00" in output and "80.00" in output
 
 
 def test_statistics_empty_and_populated(expense, capsys):

@@ -30,8 +30,8 @@ def test_date_retries_invalid_and_defaults_to_today(monkeypatch, capsys):
 @pytest.mark.parametrize(
     "method, bad_values, valid, expected, error",
     [
-        ("get_user_amount", ["abc", "0", "-2"], "12.5", "12.5", "Invalid amount"),
-        ("get_budget_amount", ["abc", "0", "-2"], "250", "250.0", "Invalid amount"),
+        ("get_user_amount", ["abc", "0", "-2"], "12.5", "12.50", "Invalid amount"),
+        ("get_budget_amount", ["abc", "0", "-2"], "250", "250.00", "Invalid amount"),
         ("get_user_category", ["travel"], " FOOD ", "food", "Invalid category"),
         ("get_user_description", ["   "], " Lunch ", "Lunch", "cannot be empty"),
         ("get_user_keyword", ["   "], " taxi ", "taxi", "cannot be empty"),
@@ -47,6 +47,12 @@ def test_validated_prompts_retry_until_valid(monkeypatch, capsys, method, bad_va
 def test_export_filename_is_optional(monkeypatch, entered, expected):
     inputs(monkeypatch, [entered])
     assert CommandHandler.get_export_filename() == expected
+
+
+def test_currency_prompt_retries_and_normalizes(monkeypatch, capsys):
+    inputs(monkeypatch, ["US", " kmf "])
+    assert CommandHandler.get_user_currency() == "KMF"
+    assert "Invalid currency" in capsys.readouterr().out
 
 
 def test_date_range_retries_bad_format_and_reverse_order(monkeypatch, capsys):

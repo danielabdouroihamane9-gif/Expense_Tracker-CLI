@@ -1,6 +1,7 @@
 """Validation utilities for expense tracker."""
 
 from datetime import datetime
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 VALID_CATEGORIES = {
     "food",
@@ -23,13 +24,13 @@ def validate_date(date):
 
 
 def validate_amount(amount):
-    """Validate amount is positive number."""
+    """Return a positive monetary amount rounded to two decimal places."""
     try:
-        amount_float = float(amount)
-        if amount_float <= 0:
+        amount_decimal = Decimal(str(amount))
+        if not amount_decimal.is_finite() or amount_decimal <= 0:
             raise ValueError("Amount must be greater than 0")
-        return round(amount_float, 2)
-    except ValueError as e:
+        return amount_decimal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError, ValueError) as e:
         raise ValueError(f"Invalid amount: {e}")
 
 
@@ -52,11 +53,21 @@ def validate_description(description):
 
 
 def validate_budget_amount(amount):
-    """Validate budget amount is positive."""
+    """Return a positive budget amount rounded to two decimal places."""
     try:
-        amount_float = float(amount)
-        if amount_float <= 0:
+        amount_decimal = Decimal(str(amount))
+        if not amount_decimal.is_finite() or amount_decimal <= 0:
             raise ValueError("Budget must be greater than 0")
-        return round(amount_float, 2)
-    except ValueError as e:
+        return amount_decimal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError, ValueError) as e:
         raise ValueError(f"Invalid budget amount: {e}")
+
+
+def validate_currency(currency):
+    """Normalize a three-letter currency code."""
+    if not isinstance(currency, str):
+        raise ValueError("Currency must be a three-letter code")
+    normalized = currency.strip().upper()
+    if len(normalized) != 3 or not normalized.isalpha():
+        raise ValueError("Currency must be a three-letter code")
+    return normalized

@@ -1,6 +1,7 @@
 """Core expense tracking service."""
 
 from datetime import datetime
+from decimal import Decimal
 from src.models import Expense
 from src.storage import JSONStorage
 from src.utils import VALID_CATEGORIES
@@ -16,14 +17,19 @@ class ExpenseTrackerService:
             data_dir (str): Directory for storing data files
         """
         self.storage = JSONStorage(data_dir)
+        self.currency = self.storage.load_settings()["currency"]
         self.expenses = self.storage.load_expenses()
+        if any(expense.currency != self.currency for expense in self.expenses):
+            raise ValueError(
+                f"Stored expenses must use configured currency {self.currency}"
+            )
 
-    def add_expense(self, date, amount, category, description):
+    def add_expense(self, date, amount, category, description, currency=None):
         """Add a new expense after validation.
 
         Args:
             date (str): Date in YYYY-MM-DD format
-            amount (float): Expense amount
+            amount (str | int | float | Decimal): Expense amount
             category (str): Expense category
             description (str): Expense description
 
@@ -31,10 +37,20 @@ class ExpenseTrackerService:
             str: Success or error message
         """
         try:
-            expense = Expense(date, amount, category, description)
+            currency = currency or self.currency
+            expense = Expense(
+                date, amount, category, description, currency=currency
+            )
+            if expense.currency != self.currency:
+                raise ValueError(
+                    f"Currency must match application currency {self.currency}"
+                )
             self.expenses.append(expense)
             self.storage.save_expenses(self.expenses)
-            return f"✓ Expense added: ${expense.amount:.2f} ({expense.category}) on {expense.date}"
+            return (
+                f"✓ Expense added: {expense.currency} {expense.amount:.2f} "
+                f"({expense.category}) on {expense.date}"
+            )
         except ValueError as e:
             return f"✗ Error: {e}"
 
@@ -44,6 +60,7 @@ class ExpenseTrackerService:
         amount,
         category,
         description,
+        currency=None,
     ):
         """
         Check whether an identical expense already exists.
@@ -56,7 +73,7 @@ class ExpenseTrackerService:
 
         Args:
             date (str | date): Expense date.
-            amount (float): Expense amount.
+            amount (str | int | float | Decimal): Expense amount.
             category (str): Expense category.
             description (str): Expense description.
 
@@ -64,12 +81,14 @@ class ExpenseTrackerService:
             bool: True if a duplicate exists, otherwise False.
         """
 
+        currency = currency or self.currency
         for expense in self.expenses:
             if (
                 expense.date == date
                 and expense.amount == amount
                 and expense.category == category.lower()
                 and expense.description == description
+                and expense.currency == currency
             ):
                 return True
 
@@ -138,7 +157,7 @@ class ExpenseTrackerService:
             year = today.year if year is None else year
             month = today.month if month is None else month
 
-        summary = {cat: 0.0 for cat in VALID_CATEGORIES}
+        summary = {cat: Decimal("0.00") for cat in VALID_CATEGORIES}
 
         for expense in self.expenses:
             if expense.date.year == year and expense.date.month == month:
@@ -167,7 +186,7 @@ class ExpenseTrackerService:
             category = expense.category
 
             if category not in spending:
-                spending[category] = 0
+                spending[category] = Decimal("0.00")
 
             spending[category] += expense.amount
 
@@ -210,10 +229,10 @@ class ExpenseTrackerService:
             dict:
                 {
                     "count": int,
-                    "total": float,
+                    "total": Decimal,
                     "highest": Expense | None,
                     "lowest": Expense | None,
-                    "average": float
+                    "average": Decimal
                 }
         """
 
@@ -222,13 +241,15 @@ class ExpenseTrackerService:
         if not expenses:
             return {
                 "count": 0,
-                "total": 0,
+                "total": Decimal("0.00"),
                 "highest": None,
                 "lowest": None,
-                "average": 0,
+                "average": Decimal("0.00"),
             }
 
-        total = sum(expense.amount for expense in expenses)
+        total = sum(
+            (expense.amount for expense in expenses), Decimal("0.00")
+        )
 
         highest = max(
             expenses,
@@ -305,7 +326,13 @@ class ExpenseTrackerService:
             return False
 
         # Validate all proposed values before mutating the original object.
-        updated = Expense(str(expense.date), amount, category, description)
+        updated = Expense(
+            str(expense.date),
+            amount,
+            category,
+            description,
+            currency=expense.currency,
+        )
         expense.amount = updated.amount
         expense.category = updated.category
         expense.description = updated.description
@@ -383,6 +410,7 @@ class ExpenseTrackerService:
             category=expense.category,
             amount=expense.amount,
             description=expense.description,
+            currency=expense.currency,
         )
 
         if "Error:" in result:
@@ -390,7 +418,7 @@ class ExpenseTrackerService:
 
         return (
             f"✓ Expense duplicated successfully: "
-            f"${expense.amount:.2f} "
+            f"{expense.currency} {expense.amount:.2f} "
             f"({expense.category}) "
             f"on {new_date}"
         )
@@ -419,13 +447,20 @@ class ExpenseTrackerService:
                     row["Amount"],
                     row["Category"],
                     row["Description"],
+                    currency=row.get("Currency", self.currency),
                 )
+
+                if expense.currency != self.currency:
+                    raise ValueError(
+                        f"Currency must be {self.currency}, got {expense.currency}"
+                    )
 
                 if self._is_duplicate_expense(
                     expense.date,
                     expense.amount,
                     expense.category,
                     expense.description,
+                    expense.currency,
                 ):
                     skipped_duplicates += 1
                     continue

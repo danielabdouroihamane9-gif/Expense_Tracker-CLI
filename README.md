@@ -226,7 +226,7 @@ Main Menu:
 4. Export
 0. Exit
 
-Enter your choice (0-4): ```
+Enter your choice (0-5): ```
 
 ---
 
@@ -244,11 +244,11 @@ Menu selection: 1
 
 --- Add Expense ---
 Enter date (YYYY-MM-DD) [press Enter for today]: 2026-06-07
-Enter amount ($): 50.00
+Enter amount (USD): 50.00
 Enter category (food/transport/rent/utilities/entertainment/healthcare/other): food
 Enter description: Lunch at downtown restaurant
 
-✓ Expense added: $50.00 (food) on 2026-06-07
+✓ Expense added: USD 50.00 (food) on 2026-06-07
 ```
 
 ### Example: Viewing Budget Status
@@ -259,9 +259,9 @@ Budget Status:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Category     Spent    Budget    Remaining    Status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-food         $200.00  $300.00   $100.00      ✓
-transport    $75.00   $150.00   $75.00       ✓
-rent         $600.00  $600.00   $0.00        ✓
+food         USD 200.00  USD 300.00   USD 100.00      ✓
+transport    USD 75.00   USD 150.00   USD 75.00       ✓
+rent         USD 600.00  USD 600.00   USD 0.00        ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -271,12 +271,12 @@ Menu selection: 4
 
 Monthly Summary (June 2026):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-food         $150.00
-transport    $80.00
-rent         $600.00
-utilities    $120.00
+food         USD 150.00
+transport    USD 80.00
+rent         USD 600.00
+utilities    USD 120.00
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TOTAL        $950.00
+TOTAL        USD 950.00
 ```
 
 ---

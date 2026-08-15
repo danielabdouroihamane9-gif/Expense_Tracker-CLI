@@ -142,6 +142,7 @@ Current implementation:
 
 - expenses.json
 - budgets.json
+- settings.json (application-wide currency, default USD)
 
 The storage layer isolates file operations from business logic, making future migration to a relational database straightforward.
 

@@ -114,7 +114,7 @@ src/
 ```
 Menu choice: 1
 Date (YYYY-MM-DD) [Enter for today]: 2026-06-07
-Amount ($): 50.00
+Amount (USD): 50.00
 Category: food
 Description: Lunch
 ```
