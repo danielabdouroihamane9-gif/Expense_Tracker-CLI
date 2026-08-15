@@ -4,7 +4,6 @@ from decimal import Decimal
 from pathlib import Path
 import pytest
 
-from src.models import Expense
 from src.storage import (
     DataCorruptionError,
     JSONStorage,
@@ -13,6 +12,7 @@ from src.storage import (
     StorageWriteError,
     UnsupportedSchemaVersionError,
 )
+from tests.fakes import make_expense
 
 
 def test_missing_storage_files_return_empty_collections(tmp_path):
@@ -31,7 +31,7 @@ def test_storage_creates_missing_parent_directories(tmp_path):
 
 def test_expenses_and_budgets_persist_between_instances(tmp_path):
     storage = JSONStorage(tmp_path)
-    expenses = [Expense("2025-01-02", 8.5, "food", "Breakfast")]
+    expenses = [make_expense("2025-01-02", 8.5, "food", "Breakfast")]
     budgets = {"food": Decimal("250.00")}
 
     storage.save_expenses(expenses)
@@ -62,7 +62,7 @@ def test_invalid_expense_records_raise_explicit_error(tmp_path):
 
 def test_storage_writes_versioned_schema_and_exact_money(tmp_path):
     storage = JSONStorage(tmp_path)
-    storage.save_expenses([Expense("2025-01-02", "8.5", "food", "Breakfast")])
+    storage.save_expenses([make_expense("2025-01-02", "8.5", "food", "Breakfast")])
     storage.save_budgets({"food": Decimal("250")})
 
     expenses_document = json.loads(storage.expenses_file.read_text())
@@ -190,8 +190,8 @@ def test_versioned_document_currency_mismatch_is_rejected(
 
 def test_second_save_backs_up_previous_valid_document(tmp_path):
     storage = JSONStorage(tmp_path)
-    first = Expense("2025-01-01", 10, "food", "First")
-    second = Expense("2025-01-02", 20, "transport", "Second")
+    first = make_expense("2025-01-01", 10, "food", "First")
+    second = make_expense("2025-01-02", 20, "transport", "Second")
 
     storage.save_expenses([first])
     storage.save_expenses([first, second])
@@ -202,8 +202,8 @@ def test_second_save_backs_up_previous_valid_document(tmp_path):
 
 def test_corrupt_primary_is_restored_from_valid_backup(tmp_path):
     storage = JSONStorage(tmp_path)
-    first = Expense("2025-01-01", 10, "food", "First")
-    second = Expense("2025-01-02", 20, "transport", "Second")
+    first = make_expense("2025-01-01", 10, "food", "First")
+    second = make_expense("2025-01-02", 20, "transport", "Second")
     storage.save_expenses([first])
     storage.save_expenses([first, second])
     storage.expenses_file.write_text("truncated")
@@ -234,7 +234,7 @@ def test_budget_and_settings_documents_recover_from_their_own_backups(tmp_path):
 
 def test_missing_primary_is_restored_when_valid_backup_exists(tmp_path):
     storage = JSONStorage(tmp_path)
-    expense = Expense("2025-01-01", 10, "food", "First")
+    expense = make_expense("2025-01-01", 10, "food", "First")
     storage.save_expenses([expense])
     os.replace(storage.expenses_file, tmp_path / "expenses.json.bak")
 
@@ -254,7 +254,7 @@ def test_invalid_primary_and_backup_raise_recovery_error(tmp_path):
 
 def test_future_schema_is_rejected_without_falling_back(tmp_path):
     storage = JSONStorage(tmp_path)
-    expense = Expense("2025-01-01", 10, "food", "First")
+    expense = make_expense("2025-01-01", 10, "food", "First")
     storage.save_expenses([expense])
     storage.save_expenses([expense])
     storage.expenses_file.write_text(json.dumps({
@@ -286,8 +286,8 @@ def test_interrupted_replace_preserves_primary_and_removes_temp_file(
     tmp_path, monkeypatch
 ):
     storage = JSONStorage(tmp_path)
-    first = Expense("2025-01-01", 10, "food", "First")
-    second = Expense("2025-01-02", 20, "transport", "Second")
+    first = make_expense("2025-01-01", 10, "food", "First")
+    second = make_expense("2025-01-02", 20, "transport", "Second")
     storage.save_expenses([first])
     original_document = storage.expenses_file.read_text()
     real_replace = os.replace

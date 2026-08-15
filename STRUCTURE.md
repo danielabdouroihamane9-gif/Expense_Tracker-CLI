@@ -43,7 +43,10 @@ expense_tracker/
 │   │   ├── formatters.py
 │   │   └── validators.py
 │   │
+│   ├── application.py
+│   ├── config.py
 │   ├── exceptions.py
+│   ├── providers.py
 │   └── main.py
 │
 ├── data/
@@ -57,9 +60,13 @@ expense_tracker/
 
 ## Architecture Overview
 
-The application is organized into five primary layers.
+The application is organized around a composition root and five primary
+layers.
 
 ```text
+Application Composition and Configuration
+      │
+      ▼
 CLI Layer
       │
       ▼
@@ -73,6 +80,29 @@ Models Layer
 
 Utilities
 (used by all layers)
+```
+
+## Application Composition (`src/application.py`)
+
+`create_application()` is the only production factory for concrete runtime
+components. It constructs one configured JSON repository, injects it into the
+services, and injects the same clock and UUID provider into every component
+that needs them. The returned `Application` container owns the complete object
+graph. `src/main.py` remains a thin entry point.
+
+## Runtime Configuration (`src/config.py`)
+
+`ApplicationConfig` centralizes data and export directories and the initial
+currency. The defaults are `data`, `exports`, and `USD`; each can be overridden
+through the documented `EXPENSE_TRACKER_*` environment variables. Persisted
+settings remain authoritative after initial setup.
+
+## Runtime Providers (`src/providers.py`)
+
+The `Clock` and `UUIDGenerator` protocols isolate operating-system time and
+random UUID generation. Services, storage migration, export filenames, command
+defaults, and reports receive these providers through dependency injection.
+Only the system provider implementations call ambient time or UUID functions.
 ---
 
 ## CLI Layer (`src/cli`)
@@ -205,6 +235,9 @@ The typical flow of an operation is:
 User
     │
     ▼
+Application Factory
+    │
+    ▼
 Menu
     │
     ▼
@@ -225,7 +258,7 @@ For example, when adding an expense:
 1. The user enters expense information.
 2. The CLI collects the input.
 3. The service validates and processes the request.
-4. An Expense object is created.
+4. An Expense object is created with the injected clock and UUID provider.
 5. The service saves through the expense repository contract.
 6. The injected JSON implementation persists the updated data.
 7. The CLI formats and displays the returned expense.

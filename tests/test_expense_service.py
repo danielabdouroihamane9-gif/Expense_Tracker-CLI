@@ -3,15 +3,25 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.models import Expense
 from src.services import ExpenseTrackerService
 from src.exceptions import CurrencyMismatchError, DomainValidationError
-from src.storage import JSONStorage, StorageWriteError
+from src.storage import StorageWriteError
+from tests.fakes import (
+    FixedClock,
+    SequentialUUIDGenerator,
+    make_expense,
+    make_json_storage,
+)
 
 
 def build_service(data_dir):
-    repository = JSONStorage(data_dir)
-    return ExpenseTrackerService(repository, repository)
+    repository = make_json_storage(data_dir)
+    return ExpenseTrackerService(
+        repository,
+        repository,
+        clock=FixedClock(),
+        uuid_generator=SequentialUUIDGenerator(),
+    )
 
 
 def make_service(tmp_path, expenses=()):
@@ -94,7 +104,7 @@ def test_add_rejects_currency_different_from_application_setting(tmp_path):
 
 
 def test_update_is_validated_and_atomic(tmp_path):
-    service = make_service(tmp_path, [Expense("2025-05-28", 10, "food", "Lunch")])
+    service = make_service(tmp_path, [make_expense("2025-05-28", 10, "food", "Lunch")])
     expense = service.expenses[0]
     before = expense.to_dict()
 
@@ -106,7 +116,7 @@ def test_update_is_validated_and_atomic(tmp_path):
 
 
 def test_duplicate_does_not_claim_success_when_new_date_is_invalid(tmp_path):
-    original = Expense("2025-05-28", 10, "food", "Lunch")
+    original = make_expense("2025-05-28", 10, "food", "Lunch")
     service = make_service(tmp_path, [original])
     with pytest.raises(DomainValidationError):
         service.duplicate_expense(original, "not-a-date")
@@ -114,7 +124,7 @@ def test_duplicate_does_not_claim_success_when_new_date_is_invalid(tmp_path):
 
 
 def test_import_reports_success_duplicates_and_bad_rows(tmp_path):
-    existing = Expense("2025-05-28", 10, "food", "Lunch")
+    existing = make_expense("2025-05-28", 10, "food", "Lunch")
     service = make_service(tmp_path, [existing])
     rows = [
         {"Date": "2025-05-28", "Amount": "10", "Category": "FOOD", "Description": "Lunch"},
@@ -131,8 +141,14 @@ def test_import_reports_success_duplicates_and_bad_rows(tmp_path):
 
 
 def test_failed_saves_roll_back_every_expense_mutation(tmp_path):
-    first = Expense("2025-05-28", 10, "food", "Lunch")
-    second = Expense("2025-05-29", 20, "transport", "Taxi")
+    first = make_expense("2025-05-28", 10, "food", "Lunch")
+    second = make_expense(
+        "2025-05-29",
+        20,
+        "transport",
+        "Taxi",
+        expense_id="12345678-1234-5678-1234-567812345679",
+    )
     service = make_service(tmp_path, [first, second])
     before = [expense.to_dict() for expense in service.expenses]
     service.expense_repository.save_expenses = MagicMock(

@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 
+from src.exceptions import DomainValidationError
 from src.models import Expense
 from src.utils.validators import (
     VALID_CATEGORIES,
@@ -56,7 +57,7 @@ def test_expense_round_trip_equality_and_repr():
         expense_id="12345678-1234-5678-1234-567812345678",
         currency="usd", created_at="2025-05-28T10:00:00Z",
     )
-    restored = Expense.from_dict(expense.to_dict())
+    restored = Expense.from_dict(expense.to_dict(), default_currency="USD")
 
     assert restored == expense
     assert expense.to_dict() == {
@@ -69,14 +70,17 @@ def test_expense_round_trip_equality_and_repr():
     assert expense != object()
 
 
-def test_legacy_expense_record_receives_new_defaults():
-    expense = Expense.from_dict({
-        "date": "2025-05-28", "amount": 12.5,
-        "category": "food", "description": "Lunch",
-    })
-    assert expense.currency == "USD"
-    assert expense.to_dict()["amount"] == "12.50"
-    assert expense.id and expense.created_at
+def test_expense_requires_identity_and_creation_time():
+    with pytest.raises(DomainValidationError, match="ID is required"):
+        Expense(
+            "2025-05-28",
+            12.5,
+            "food",
+            "Lunch",
+            expense_id=None,
+            currency="USD",
+            created_at="2025-05-28T10:00:00Z",
+        )
 
 
 @pytest.mark.parametrize("value, expected", [(" usd ", "USD"), ("eur", "EUR")])

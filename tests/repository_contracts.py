@@ -13,6 +13,7 @@ def assert_expense_repository_contract(repository):
         "food",
         "Contract lunch",
         expense_id="12345678-1234-5678-1234-567812345678",
+        currency="USD",
         created_at="2025-01-02T10:30:00Z",
     )
     assert repository.load_expenses() == []

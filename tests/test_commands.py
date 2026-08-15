@@ -1,11 +1,9 @@
 """Tests for validated command-line input collection."""
 
-from datetime import datetime
-from unittest.mock import patch
-
 import pytest
 
 from src.cli.commands import CommandHandler
+from tests.fakes import FixedClock
 
 
 def inputs(monkeypatch, values):
@@ -13,17 +11,19 @@ def inputs(monkeypatch, values):
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(iterator))
 
 
-def test_date_accepts_valid_value(monkeypatch):
+@pytest.fixture
+def handler():
+    return CommandHandler(FixedClock())
+
+
+def test_date_accepts_valid_value(monkeypatch, handler):
     inputs(monkeypatch, ["2025-06-15"])
-    assert CommandHandler.get_user_date() == "2025-06-15"
+    assert handler.get_user_date() == "2025-06-15"
 
 
-def test_date_retries_invalid_and_defaults_to_today(monkeypatch, capsys):
+def test_date_retries_invalid_and_defaults_to_today(monkeypatch, capsys, handler):
     inputs(monkeypatch, ["15/06/2025", ""])
-    with patch("src.cli.commands.datetime") as clock:
-        clock.strptime.side_effect = datetime.strptime
-        clock.now.return_value = datetime(2025, 6, 16)
-        assert CommandHandler.get_user_date() == "2025-06-16"
+    assert handler.get_user_date() == "2025-06-16"
     assert "Invalid format" in capsys.readouterr().out
 
 
@@ -37,27 +37,28 @@ def test_date_retries_invalid_and_defaults_to_today(monkeypatch, capsys):
         ("get_user_keyword", ["   "], " taxi ", "taxi", "cannot be empty"),
     ],
 )
-def test_validated_prompts_retry_until_valid(monkeypatch, capsys, method, bad_values, valid, expected, error):
+def test_validated_prompts_retry_until_valid(monkeypatch, capsys, handler, method, bad_values, valid, expected, error):
     inputs(monkeypatch, [*bad_values, valid])
-    assert getattr(CommandHandler, method)() == expected
+    arguments = ("USD",) if method in {"get_user_amount", "get_budget_amount"} else ()
+    assert getattr(handler, method)(*arguments) == expected
     assert error in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("entered, expected", [("report.csv", "report.csv"), ("   ", None)])
-def test_export_filename_is_optional(monkeypatch, entered, expected):
+def test_export_filename_is_optional(monkeypatch, handler, entered, expected):
     inputs(monkeypatch, [entered])
-    assert CommandHandler.get_export_filename() == expected
+    assert handler.get_export_filename() == expected
 
 
-def test_currency_prompt_retries_and_normalizes(monkeypatch, capsys):
+def test_currency_prompt_retries_and_normalizes(monkeypatch, capsys, handler):
     inputs(monkeypatch, ["US", " kmf "])
-    assert CommandHandler.get_user_currency() == "KMF"
+    assert handler.get_user_currency() == "KMF"
     assert "Invalid currency" in capsys.readouterr().out
 
 
-def test_date_range_retries_bad_format_and_reverse_order(monkeypatch, capsys):
+def test_date_range_retries_bad_format_and_reverse_order(monkeypatch, capsys, handler):
     inputs(monkeypatch, ["bad", "2025-01-02", "2025-02-01", "2025-01-01", "2025-01-01", "2025-02-01"])
-    start, end = CommandHandler.get_user_date_range()
+    start, end = handler.get_user_date_range()
     assert (str(start), str(end)) == ("2025-01-01", "2025-02-01")
     output = capsys.readouterr().out
     assert "Invalid date format" in output
@@ -65,6 +66,6 @@ def test_date_range_retries_bad_format_and_reverse_order(monkeypatch, capsys):
 
 
 @pytest.mark.parametrize("entered, expected", [("0", None), (" data.csv ", "data.csv"), ("", "")])
-def test_csv_path_supports_cancel_and_paths(monkeypatch, entered, expected):
+def test_csv_path_supports_cancel_and_paths(monkeypatch, handler, entered, expected):
     inputs(monkeypatch, [entered])
-    assert CommandHandler().get_csv_file_path() == expected
+    assert handler.get_csv_file_path() == expected

@@ -16,7 +16,9 @@ legacy JSON migration, configurable currency, cross-file currency mismatch
 protection, atomic replacement, backups, corruption recovery, interrupted and
 denied file operations, repository contracts, persistence-free service tests,
 typed service results, service rollback, budgets, reports, imports, exports,
-and CLI routing.
+CLI routing, centralized application composition, environment-based runtime
+configuration, deterministic clocks and UUID generation, and thin-entry-point
+architecture rules.
 
 ## Manual acceptance
 

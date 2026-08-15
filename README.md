@@ -2,7 +2,7 @@
 
 A professional, modular expense tracking application built with Python, demonstrating clean architecture principles and best practices for scalable software design.
 
-**Status:** ✅ Phase 1 Complete (Core Python Mastery)
+**Status:** Phase 1 stabilization in progress — Milestones 1–4 implemented
 
 This project represents the foundation of a Python Full-Stack + AI Backend Development learning journey. It showcases a professional separation of concerns architecture designed to scale seamlessly into Phase 2 (API layer), Phase 3 (Database integration), and beyond.
 
@@ -20,6 +20,21 @@ python -m src.main
 ```
 
 **That's it!** The interactive menu will guide you through all features.
+
+### Optional runtime configuration
+
+The CLI defaults to `data`, `exports`, and an initial currency of `USD`. These
+values can be configured without code changes:
+
+```powershell
+$env:EXPENSE_TRACKER_DATA_DIR = "tmp/demo-data"
+$env:EXPENSE_TRACKER_EXPORT_DIR = "tmp/demo-exports"
+$env:EXPENSE_TRACKER_DEFAULT_CURRENCY = "KMF"
+python -m src.main
+```
+
+See [Application Composition and Runtime Configuration](docs/APPLICATION_COMPOSITION.md)
+for the dependency graph, configuration rules, and cleanup commands.
 
 ---
 

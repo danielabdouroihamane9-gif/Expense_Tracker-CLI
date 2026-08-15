@@ -1,38 +1,29 @@
-"""System-level tests spanning CLI, services, persistence, and CSV."""
+"""System-level tests spanning composition, CLI, persistence, and CSV."""
 
-from src.cli.commands import CommandHandler
-from src.cli.menu import Menu
-from src.services import (
-    BudgetService,
-    ExpenseTrackerService,
-    ExportService,
-    SettingsService,
-)
-from src.storage import JSONStorage
+from src.application import create_application
+from src.config import ApplicationConfig
+from tests.fakes import FixedClock, SequentialUUIDGenerator
 
 
-def build_services(data_dir):
-    repository = JSONStorage(data_dir)
-    return (
-        ExpenseTrackerService(repository, repository),
-        BudgetService(repository, repository),
-        SettingsService(repository, repository, repository),
+def build_application(data_dir, export_dir=None, currency="USD"):
+    return create_application(
+        ApplicationConfig(
+            data_dir=data_dir,
+            export_dir=export_dir or data_dir.parent / "exports",
+            default_currency=currency,
+        ),
+        clock=FixedClock(),
+        uuid_generator=SequentialUUIDGenerator(),
     )
 
 
 def test_interactive_add_expense_persists_through_menu(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
-    tracker, budgets, settings = build_services(data_dir)
-    menu = Menu(
-        settings,
-        tracker,
-        budgets,
-        ExportService(tmp_path / "exports"),
-    )
+    application = build_application(data_dir, tmp_path / "exports")
     answers = iter(["1", "1", "1", "2025-05-28", "25.50", "food", "Lunch", "0", "0", "0"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(answers))
-    menu.run()
-    reloaded, _, _ = build_services(data_dir)
+    application.menu.run()
+    reloaded = build_application(data_dir).expense_service
     assert reloaded.get_expense_count() == 1
     stored = reloaded.expenses[0].to_dict()
     assert stored["occurred_on"] == "2025-05-28"
@@ -45,8 +36,10 @@ def test_interactive_add_expense_persists_through_menu(tmp_path, monkeypatch):
 
 def test_import_budget_report_export_and_reload_workflow(tmp_path):
     data_dir, export_dir = tmp_path / "data", tmp_path / "exports"
-    tracker, budgets, _ = build_services(data_dir)
-    csv_service = ExportService(export_dir)
+    application = build_application(data_dir, export_dir)
+    tracker = application.expense_service
+    budgets = application.budget_service
+    csv_service = application.export_service
     source = tmp_path / "expenses.csv"
     source.write_text(
         "Date,Amount,Category,Description\n"
@@ -68,24 +61,33 @@ def test_import_budget_report_export_and_reload_workflow(tmp_path):
     assert csv_service.export_summary_to_csv(summary, "summary.csv").kind == "summary"
     assert (export_dir / "result.csv").exists()
     assert (export_dir / "summary.csv").exists()
-    reloaded_tracker, reloaded_budgets, _ = build_services(data_dir)
+    reloaded_application = build_application(data_dir, export_dir)
+    reloaded_tracker = reloaded_application.expense_service
+    reloaded_budgets = reloaded_application.budget_service
     assert reloaded_tracker.get_expense_count() == 3
     assert reloaded_budgets.get_budget("food") == 100.0
 
 
 def test_configured_currency_flows_through_complete_system(tmp_path):
     data_dir, export_dir = tmp_path / "data", tmp_path / "exports"
-    tracker, budgets, settings = build_services(data_dir)
+    application = build_application(data_dir, export_dir)
+    tracker = application.expense_service
+    budgets = application.budget_service
+    settings = application.settings_service
     assert settings.set_currency("KMF").changed is True
 
-    tracker, budgets, _ = build_services(data_dir)
-    csv_service = ExportService(export_dir, currency="KMF")
+    application = build_application(data_dir, export_dir)
+    tracker = application.expense_service
+    budgets = application.budget_service
+    csv_service = application.export_service
     assert tracker.add_expense(
         "2025-05-01", "1200", "food", "Lunch"
     ).currency == "KMF"
     assert budgets.set_budget("food", "5000").amount == 5000
 
-    reloaded_tracker, reloaded_budgets, _ = build_services(data_dir)
+    reloaded_application = build_application(data_dir, export_dir)
+    reloaded_tracker = reloaded_application.expense_service
+    reloaded_budgets = reloaded_application.budget_service
     expense = reloaded_tracker.expenses[0]
     assert expense.currency == "KMF"
     assert reloaded_budgets.currency == "KMF"

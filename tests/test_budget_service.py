@@ -4,12 +4,13 @@ from unittest.mock import MagicMock
 
 from src.services import BudgetService
 from src.exceptions import DomainValidationError
-from src.storage import JSONStorage, StorageWriteError
+from src.storage import StorageWriteError
+from tests.fakes import FixedClock, make_json_storage
 
 
 def build_service(data_dir):
-    repository = JSONStorage(data_dir)
-    return BudgetService(repository, repository)
+    repository = make_json_storage(data_dir)
+    return BudgetService(repository, repository, clock=FixedClock())
 
 
 def test_budget_crud_and_persistence(tmp_path):

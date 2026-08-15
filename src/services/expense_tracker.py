@@ -1,10 +1,10 @@
 """Core expense tracking service."""
 
-from datetime import datetime
 from decimal import Decimal
 
 from src.exceptions import CurrencyMismatchError, DomainValidationError
 from src.models import Expense
+from src.providers import Clock, UUIDGenerator
 from src.repositories import ExpenseRepository, RepositoryError, SettingsRepository
 from src.utils import VALID_CATEGORIES
 
@@ -18,10 +18,15 @@ class ExpenseTrackerService:
         self,
         expense_repository: ExpenseRepository,
         settings_repository: SettingsRepository,
+        *,
+        clock: Clock,
+        uuid_generator: UUIDGenerator,
     ):
         """Initialize with persistence-agnostic repository dependencies."""
         self.expense_repository = expense_repository
         self.settings_repository = settings_repository
+        self.clock = clock
+        self.uuid_generator = uuid_generator
         self.currency = self.settings_repository.load_settings()["currency"]
         self.expenses = self.expense_repository.load_expenses()
         if any(expense.currency != self.currency for expense in self.expenses):
@@ -37,13 +42,20 @@ class ExpenseTrackerService:
             amount (str | int | float | Decimal): Expense amount
             category (str): Expense category
             description (str): Expense description
+            currency (str | None): Optional currency that must match settings
 
         Returns:
             Expense: The persisted expense.
         """
         currency = currency or self.currency
         expense = Expense(
-            date, amount, category, description, currency=currency
+            date,
+            amount,
+            category,
+            description,
+            expense_id=self.uuid_generator.new_uuid(),
+            currency=currency,
+            created_at=self.clock.now(),
         )
         if expense.currency != self.currency:
             raise CurrencyMismatchError(
@@ -156,7 +168,7 @@ class ExpenseTrackerService:
             dict: Dictionary with categories and total amounts
         """
         if year is None or month is None:
-            today = datetime.now().date()
+            today = self.clock.now().date()
             year = today.year if year is None else year
             month = today.month if month is None else month
 
@@ -344,7 +356,9 @@ class ExpenseTrackerService:
             amount,
             category,
             description,
+            expense_id=expense.id,
             currency=expense.currency,
+            created_at=expense.created_at,
         )
         previous_values = (
             expense.amount,
@@ -462,7 +476,9 @@ class ExpenseTrackerService:
                     row["Amount"],
                     row["Category"],
                     row["Description"],
+                    expense_id=self.uuid_generator.new_uuid(),
                     currency=row.get("Currency", self.currency),
+                    created_at=self.clock.now(),
                 )
 
                 if expense.currency != self.currency:

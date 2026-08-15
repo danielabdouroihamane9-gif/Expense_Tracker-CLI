@@ -1,8 +1,8 @@
 """Budget management service."""
 
-from datetime import datetime
 from decimal import Decimal
 
+from src.providers import Clock
 from src.repositories import BudgetRepository, RepositoryError, SettingsRepository
 from src.utils import VALID_CATEGORIES, validate_budget_amount, validate_category
 
@@ -16,10 +16,13 @@ class BudgetService:
         self,
         budget_repository: BudgetRepository,
         settings_repository: SettingsRepository,
+        *,
+        clock: Clock,
     ):
         """Initialize with persistence-agnostic repository dependencies."""
         self.budget_repository = budget_repository
         self.settings_repository = settings_repository
+        self.clock = clock
         self.currency = self.settings_repository.load_settings()["currency"]
         self.budgets = self.budget_repository.load_budgets()
 
@@ -80,7 +83,7 @@ class BudgetService:
             dict: Budget status with spent, budget, remaining, percentage, warning
         """
         if year is None or month is None:
-            today = datetime.now().date()
+            today = self.clock.now().date()
             year, month = today.year, today.month
 
         status = {}

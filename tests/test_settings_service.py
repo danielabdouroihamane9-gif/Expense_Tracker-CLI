@@ -7,15 +7,22 @@ import pytest
 
 from src.exceptions import CurrencyChangeBlockedError, DomainValidationError
 from src.services import BudgetService, ExpenseTrackerService, SettingsService
-from src.storage import JSONStorage, StorageWriteError
+from src.storage import StorageWriteError
+from tests.fakes import FixedClock, SequentialUUIDGenerator, make_json_storage
 
 
 def build_services(data_dir):
-    repository = JSONStorage(data_dir)
+    repository = make_json_storage(data_dir)
+    clock = FixedClock()
     return (
         SettingsService(repository, repository, repository),
-        ExpenseTrackerService(repository, repository),
-        BudgetService(repository, repository),
+        ExpenseTrackerService(
+            repository,
+            repository,
+            clock=clock,
+            uuid_generator=SequentialUUIDGenerator(),
+        ),
+        BudgetService(repository, repository, clock=clock),
     )
 
 

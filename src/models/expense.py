@@ -1,7 +1,7 @@
 """Expense domain model with validation and stable identity."""
 
 from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from src.exceptions import DomainValidationError
 from src.utils.validators import (
@@ -23,9 +23,9 @@ class Expense:
         category,
         description,
         *,
-        expense_id=None,
-        currency="USD",
-        created_at=None,
+        expense_id,
+        currency,
+        created_at,
     ):
         """Initialize an expense with validation.
 
@@ -34,6 +34,9 @@ class Expense:
             amount (str | int | float | Decimal): Positive monetary amount
             category (str): Expense category
             description (str): Expense description
+            expense_id (UUID | str): Identifier supplied by the application
+            currency (str): Three-letter application currency
+            created_at (datetime | str): Creation time supplied by the clock
         """
         self.id = self._validate_id(expense_id)
         self.occurred_on = validate_date(date)
@@ -46,7 +49,7 @@ class Expense:
     @staticmethod
     def _validate_id(expense_id):
         if expense_id is None:
-            return uuid4()
+            raise DomainValidationError("Expense ID is required")
         try:
             return expense_id if isinstance(expense_id, UUID) else UUID(str(expense_id))
         except (TypeError, ValueError, AttributeError) as error:
@@ -55,7 +58,7 @@ class Expense:
     @staticmethod
     def _validate_created_at(created_at):
         if created_at is None:
-            return datetime.now(timezone.utc)
+            raise DomainValidationError("Expense creation timestamp is required")
         if isinstance(created_at, str):
             value = created_at.replace("Z", "+00:00")
             try:
@@ -88,16 +91,16 @@ class Expense:
         }
 
     @classmethod
-    def from_dict(cls, data, default_currency="USD"):
+    def from_dict(cls, data, *, default_currency):
         """Create Expense from dictionary (for JSON deserialization)."""
         return cls(
             data.get("occurred_on", data.get("date")),
             data["amount"],
             data["category"],
             data["description"],
-            expense_id=data.get("id"),
+            expense_id=data["id"],
             currency=data.get("currency", default_currency),
-            created_at=data.get("created_at"),
+            created_at=data["created_at"],
         )
 
     def __repr__(self):

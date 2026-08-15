@@ -1,8 +1,7 @@
 """Main menu for CLI."""
 
-from datetime import datetime
-
 from src.exceptions import CSVImportError, ExpenseTrackerError
+from src.providers import Clock
 from src.repositories import RepositoryError
 from src.utils import (
     display_expenses_table,
@@ -19,7 +18,6 @@ from src.utils import (
     validate_amount,
     format_currency,
 )
-from src.cli.commands import CommandHandler
 
 
 class Menu:
@@ -30,7 +28,8 @@ class Menu:
         expense_service,
         budget_service,
         export_service,
-        command_handler=None,
+        command_handler,
+        clock: Clock,
     ):
         """Initialize with fully constructed application services."""
         self.settings_service = settings_service
@@ -38,7 +37,8 @@ class Menu:
         self.expense_service = expense_service
         self.budget_service = budget_service
         self.export_service = export_service
-        self.commands = command_handler or CommandHandler()
+        self.commands = command_handler
+        self.clock = clock
 
     def run(self):
         """Run the main menu loop with submenu architecture."""
@@ -639,7 +639,7 @@ class Menu:
 
     def _monthly_summary(self):
         """Display monthly summary based on user-requested year and month."""
-        today = datetime.now().date()
+        today = self.clock.now().date()
     
         # 1. Get and validate the year input
         year_input = input(f"Enter year (Press Enter for current year {today.year}): ").strip()
@@ -726,7 +726,7 @@ class Menu:
 
         display_budget_edit_preview(category, current_amount, self.currency)
 
-        new_amount = self.commands.get_budget_amount()
+        new_amount = self.commands.get_budget_amount(self.currency)
 
         result = self.budget_service.set_budget(
             category,
@@ -855,7 +855,7 @@ class Menu:
 
     def _view_budget_status(self):
         """View budget status for current month."""
-        today = datetime.now().date()
+        today = self.clock.now().date()
         monthly_summary = self.expense_service.get_monthly_summary(
             today.year, today.month
         )
@@ -888,7 +888,7 @@ class Menu:
         """Export monthly summary to CSV."""
         print("\n--- Export Monthly Summary to CSV ---")
         filename = self.commands.get_export_filename()
-        today = datetime.now().date()
+        today = self.clock.now().date()
         summary = self.expense_service.get_monthly_summary(today.year, today.month)
 
         if filename:
