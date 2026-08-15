@@ -16,6 +16,7 @@
 - [Data-foundation acceptance](PHASE_1_ACCEPTANCE.md)
 - [Current build summary](BUILD_SUMMARY.md)
 - [Release completion checklist](COMPLETION_CHECKLIST.md)
+- [Release-candidate verification report](PHASE_1_RELEASE_REPORT.md)
 
 ## Later roadmap preparation
 

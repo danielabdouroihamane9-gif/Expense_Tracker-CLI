@@ -34,6 +34,7 @@ Phase 1 roadmap governs milestone status.
 | [docs/PHASE_1_ACCEPTANCE.md](docs/PHASE_1_ACCEPTANCE.md) | Data-foundation acceptance evidence |
 | [docs/COMPLETION_CHECKLIST.md](docs/COMPLETION_CHECKLIST.md) | Remaining Phase 1 release-gate checklist |
 | [docs/BUILD_SUMMARY.md](docs/BUILD_SUMMARY.md) | Concise current implementation summary |
+| [docs/PHASE_1_RELEASE_REPORT.md](docs/PHASE_1_RELEASE_REPORT.md) | Verified release-candidate evidence, limitations, and remaining publication work |
 
 ## Future Django handoff
 

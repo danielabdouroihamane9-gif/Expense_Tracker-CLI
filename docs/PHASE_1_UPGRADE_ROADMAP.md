@@ -14,7 +14,7 @@ document are upgrades **within Roadmap Phase 1**. They are not roadmap phases.
 | 4. Application Composition and Configuration | Centralize dependency construction and runtime configuration | Complete |
 | 5. Quality Automation | Automate tests, coverage, style checks, and CI | Complete |
 | 6. Documentation and Migration Readiness | Align documentation and prepare the Django handoff | Complete |
-| 7. Phase 1 Release Gate | Complete acceptance and publish a stable Phase 1 release | Pending |
+| 7. Phase 1 Release Gate | Complete acceptance and publish a stable Phase 1 release | Complete (`v1.0.0`) |
 
 ## Milestone 1 - Data Foundation
 
@@ -124,15 +124,22 @@ Completed capabilities:
 
 ## Milestone 7 - Phase 1 Release Gate
 
-- Run all automated and manual acceptance checks.
-- Test a clean dependency installation.
-- Test legacy migration and backup recovery.
-- Confirm documentation matches behavior.
-- Confirm secrets and temporary files are excluded from Git.
-- Remove unused dependencies and resolve outstanding branches or stashes.
-- Merge the final Phase 1 release pull request.
-- Tag the stable Phase 1 version.
-- Publish the final completion report.
+Completed capabilities:
+
+- Ran the full automated quality and acceptance suite in a clean environment.
+- Verified a standard-library-only runtime environment starts the CLI safely.
+- Re-tested legacy migration, backup recovery, invalid recovery, versioned data,
+  configurable currency, CSV workflows, and subprocess CLI persistence.
+- Confirmed documentation matches current behavior and local links resolve.
+- Confirmed runtime data, generated files, and secrets are absent from tracked
+  release content.
+- Removed unused pandas, NumPy, and openpyxl runtime dependencies.
+- Documented merged historical branches and the preserved obsolete stash.
+- Published verification evidence in
+  `PHASE_1_RELEASE_REPORT.md`.
+- Passed the final pull-request quality matrix on every supported Python
+  version and merged the reviewed release commit into `main`.
+- Synchronized local `main` and published the stable `v1.0.0` tag.
 
 ## Boundary
 
