@@ -2,22 +2,26 @@
 
 from datetime import datetime
 from decimal import Decimal
-from src.storage import JSONStorage, PersistenceError
-from src.utils import VALID_CATEGORIES, validate_budget_amount
+
+from src.repositories import BudgetRepository, RepositoryError, SettingsRepository
+from src.utils import VALID_CATEGORIES, validate_budget_amount, validate_category
+
+from .results import BudgetUpdateResult
 
 
 class BudgetService:
     """Manages budget limits and tracking."""
 
-    def __init__(self, data_dir="data"):
-        """Initialize budget service.
-
-        Args:
-            data_dir (str): Directory for storing data files
-        """
-        self.storage = JSONStorage(data_dir)
-        self.currency = self.storage.load_settings()["currency"]
-        self.budgets = self.storage.load_budgets()
+    def __init__(
+        self,
+        budget_repository: BudgetRepository,
+        settings_repository: SettingsRepository,
+    ):
+        """Initialize with persistence-agnostic repository dependencies."""
+        self.budget_repository = budget_repository
+        self.settings_repository = settings_repository
+        self.currency = self.settings_repository.load_settings()["currency"]
+        self.budgets = self.budget_repository.load_budgets()
 
     def set_budget(self, category, amount):
         """Set budget limit for a category.
@@ -27,31 +31,22 @@ class BudgetService:
             amount (str | int | float | Decimal): Budget amount
 
         Returns:
-            str: Success or error message
+            BudgetUpdateResult: The normalized persisted budget.
         """
-        category_lower = category.lower().strip()
-        if category_lower not in VALID_CATEGORIES:
-            return f"✗ Invalid category: {category}"
-
+        category_lower = validate_category(category)
+        amount_decimal = validate_budget_amount(amount)
+        previous_amount = self.budgets.get(category_lower)
+        existed = category_lower in self.budgets
+        self.budgets[category_lower] = amount_decimal
         try:
-            amount_float = validate_budget_amount(amount)
-            previous_amount = self.budgets.get(category_lower)
-            existed = category_lower in self.budgets
-            self.budgets[category_lower] = amount_float
-            try:
-                self.storage.save_budgets(self.budgets)
-            except PersistenceError:
-                if existed:
-                    self.budgets[category_lower] = previous_amount
-                else:
-                    del self.budgets[category_lower]
-                raise
-            return (
-                f"✓ Budget set for {category_lower}: "
-                f"{self.currency} {amount_float:.2f}"
-            )
-        except ValueError as e:
-            return f"✗ {e}"
+            self.budget_repository.save_budgets(self.budgets)
+        except RepositoryError:
+            if existed:
+                self.budgets[category_lower] = previous_amount
+            else:
+                del self.budgets[category_lower]
+            raise
+        return BudgetUpdateResult(category_lower, amount_decimal)
 
     def get_budget(self, category):
         """Get budget limit for a category.
@@ -104,15 +99,6 @@ class BudgetService:
             over_budget = percentage > 100
             limit = percentage == 100
 
-            if over_budget:
-                status_text = "❌  OVER BUDGET"
-            elif warning:
-                status_text = "⚠️  Near Budget Limit"
-            elif limit:
-                status_text = "❗  At Budget Limit"
-            else:
-                status_text = "✅  Within Budget"
-
             status[category] = {
                 "spent": spent,
                 "budget": budget,
@@ -121,7 +107,6 @@ class BudgetService:
                 "warning": warning,
                 "over_budget": over_budget,
                 "limit": limit,
-                "status": status_text,
             }
 
         return status
@@ -143,8 +128,8 @@ class BudgetService:
 
         previous_amount = self.budgets.pop(category)
         try:
-            self.storage.save_budgets(self.budgets)
-        except PersistenceError:
+            self.budget_repository.save_budgets(self.budgets)
+        except RepositoryError:
             self.budgets[category] = previous_amount
             raise
 
@@ -161,8 +146,8 @@ class BudgetService:
         previous_budgets = self.budgets.copy()
         self.budgets.clear()
         try:
-            self.storage.save_budgets(self.budgets)
-        except PersistenceError:
+            self.budget_repository.save_budgets(self.budgets)
+        except RepositoryError:
             self.budgets.update(previous_budgets)
             raise
 

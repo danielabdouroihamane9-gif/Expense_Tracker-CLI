@@ -8,14 +8,31 @@ from src.services import (
     ExportService,
     SettingsService,
 )
+from src.storage import JSONStorage
+
+
+def build_services(data_dir):
+    repository = JSONStorage(data_dir)
+    return (
+        ExpenseTrackerService(repository, repository),
+        BudgetService(repository, repository),
+        SettingsService(repository, repository, repository),
+    )
 
 
 def test_interactive_add_expense_persists_through_menu(tmp_path, monkeypatch):
-    menu = Menu(tmp_path / "data", tmp_path / "exports")
+    data_dir = tmp_path / "data"
+    tracker, budgets, settings = build_services(data_dir)
+    menu = Menu(
+        settings,
+        tracker,
+        budgets,
+        ExportService(tmp_path / "exports"),
+    )
     answers = iter(["1", "1", "1", "2025-05-28", "25.50", "food", "Lunch", "0", "0", "0"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(answers))
     menu.run()
-    reloaded = ExpenseTrackerService(tmp_path / "data")
+    reloaded, _, _ = build_services(data_dir)
     assert reloaded.get_expense_count() == 1
     stored = reloaded.expenses[0].to_dict()
     assert stored["occurred_on"] == "2025-05-28"
@@ -28,8 +45,7 @@ def test_interactive_add_expense_persists_through_menu(tmp_path, monkeypatch):
 
 def test_import_budget_report_export_and_reload_workflow(tmp_path):
     data_dir, export_dir = tmp_path / "data", tmp_path / "exports"
-    tracker = ExpenseTrackerService(data_dir)
-    budgets = BudgetService(data_dir)
+    tracker, budgets, _ = build_services(data_dir)
     csv_service = ExportService(export_dir)
     source = tmp_path / "expenses.csv"
     source.write_text(
@@ -38,39 +54,46 @@ def test_import_budget_report_export_and_reload_workflow(tmp_path):
         "2025-05-02,40,food,Dinner\n"
         "2025-05-03,15,transport,Bus\n"
     )
-    success, rows, errors = csv_service.read_expenses_csv(source)
-    assert success is True and errors == []
-    assert tracker.import_expenses(rows)["imported"] == 3
-    assert "Budget set" in budgets.set_budget("food", 100)
+    rows = csv_service.read_expenses_csv(source)
+    assert tracker.import_expenses(rows).imported == 3
+    assert budgets.set_budget("food", 100).amount == 100
     summary = tracker.get_monthly_summary(2025, 5)
     status = budgets.get_budget_status(summary, 2025, 5)
     assert summary == {"food": 60.0, "transport": 15.0}
     assert status["food"]["remaining"] == 40.0
     assert status["food"]["warning"] is False
-    assert "Exported 3 expenses" in csv_service.export_expenses_to_csv(tracker.get_all_expenses(), "result.csv")
-    assert "Exported summary" in csv_service.export_summary_to_csv(summary, "summary.csv")
+    assert csv_service.export_expenses_to_csv(
+        tracker.get_all_expenses(), "result.csv"
+    ).record_count == 3
+    assert csv_service.export_summary_to_csv(summary, "summary.csv").kind == "summary"
     assert (export_dir / "result.csv").exists()
     assert (export_dir / "summary.csv").exists()
-    assert ExpenseTrackerService(data_dir).get_expense_count() == 3
-    assert BudgetService(data_dir).get_budget("food") == 100.0
+    reloaded_tracker, reloaded_budgets, _ = build_services(data_dir)
+    assert reloaded_tracker.get_expense_count() == 3
+    assert reloaded_budgets.get_budget("food") == 100.0
 
 
 def test_configured_currency_flows_through_complete_system(tmp_path):
     data_dir, export_dir = tmp_path / "data", tmp_path / "exports"
-    assert "changed to KMF" in SettingsService(data_dir).set_currency("KMF")
+    tracker, budgets, settings = build_services(data_dir)
+    assert settings.set_currency("KMF").changed is True
 
-    tracker = ExpenseTrackerService(data_dir)
-    budgets = BudgetService(data_dir)
+    tracker, budgets, _ = build_services(data_dir)
     csv_service = ExportService(export_dir, currency="KMF")
-    assert tracker.add_expense("2025-05-01", "1200", "food", "Lunch").startswith("✓")
-    assert budgets.set_budget("food", "5000").startswith("✓")
+    assert tracker.add_expense(
+        "2025-05-01", "1200", "food", "Lunch"
+    ).currency == "KMF"
+    assert budgets.set_budget("food", "5000").amount == 5000
 
-    expense = ExpenseTrackerService(data_dir).expenses[0]
+    reloaded_tracker, reloaded_budgets, _ = build_services(data_dir)
+    expense = reloaded_tracker.expenses[0]
     assert expense.currency == "KMF"
-    assert BudgetService(data_dir).currency == "KMF"
-    assert csv_service.export_expenses_to_csv([expense], "expenses.csv").startswith("✓")
+    assert reloaded_budgets.currency == "KMF"
+    assert csv_service.export_expenses_to_csv(
+        [expense], "expenses.csv"
+    ).record_count == 1
     assert csv_service.export_summary_to_csv(
         {"food": expense.amount}, "summary.csv"
-    ).startswith("✓")
+    ).kind == "summary"
     assert ",KMF," in (export_dir / "expenses.csv").read_text()
     assert ",KMF" in (export_dir / "summary.csv").read_text()

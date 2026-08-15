@@ -3,15 +3,23 @@ from decimal import Decimal
 from unittest.mock import MagicMock
 
 from src.services import BudgetService
-from src.storage import StorageWriteError
+from src.exceptions import DomainValidationError
+from src.storage import JSONStorage, StorageWriteError
+
+
+def build_service(data_dir):
+    repository = JSONStorage(data_dir)
+    return BudgetService(repository, repository)
 
 
 def test_budget_crud_and_persistence(tmp_path):
-    service = BudgetService(tmp_path)
-    assert "Budget set" in service.set_budget(" FOOD ", "250.129")
+    service = build_service(tmp_path)
+    result = service.set_budget(" FOOD ", "250.129")
+    assert result.category == "food"
+    assert result.amount == Decimal("250.13")
     assert service.get_budget("food") == Decimal("250.13")
     assert service.get_all_budgets() == {"food": Decimal("250.13")}
-    assert BudgetService(tmp_path).get_budget("FOOD") == Decimal("250.13")
+    assert build_service(tmp_path).get_budget("FOOD") == Decimal("250.13")
     assert service.delete_budget("missing") is False
     assert service.delete_budget("FOOD") is True
     assert service.clear_all_budgets() is True
@@ -19,13 +27,14 @@ def test_budget_crud_and_persistence(tmp_path):
 
 @pytest.mark.parametrize("category, amount", [("invalid", 10), ("food", 0), ("food", "bad")])
 def test_invalid_budget_is_reported(category, amount, tmp_path):
-    service = BudgetService(tmp_path)
-    assert "Invalid" in service.set_budget(category, amount)
+    service = build_service(tmp_path)
+    with pytest.raises(DomainValidationError):
+        service.set_budget(category, amount)
     assert service.get_all_budgets() == {}
 
 
 def test_budget_status_boundaries(tmp_path):
-    service = BudgetService(tmp_path)
+    service = build_service(tmp_path)
     for category in ("food", "rent", "transport", "shopping"):
         service.set_budget(category, 100)
     status = service.get_budget_status({"food": 79, "rent": 80, "transport": 100, "shopping": 101})
@@ -39,13 +48,13 @@ def test_budget_status_boundaries(tmp_path):
 
 
 def test_failed_saves_roll_back_every_budget_mutation(tmp_path):
-    service = BudgetService(tmp_path)
+    service = build_service(tmp_path)
     service.budgets = {
         "food": Decimal("100.00"),
         "rent": Decimal("500.00"),
     }
     before = service.budgets.copy()
-    service.storage.save_budgets = MagicMock(
+    service.budget_repository.save_budgets = MagicMock(
         side_effect=StorageWriteError("simulated disk failure")
     )
 

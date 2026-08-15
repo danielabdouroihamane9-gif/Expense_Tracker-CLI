@@ -3,6 +3,7 @@
 import pytest
 
 from src.models import Expense
+from src.services import ExpenseImportError, ExpenseImportResult
 from src.utils.formatters import (
     display_budget_edit_preview, display_budget_status, display_budgets,
     display_duplicate_expenses, display_expense_details, display_expense_statistics,
@@ -72,6 +73,17 @@ def test_statistics_empty_and_populated(expense, capsys):
 
 
 def test_import_summary_includes_errors(capsys):
-    display_import_summary({"imported": 1, "skipped_duplicates": 2, "failed": 1, "errors": ["Row 4 failed"]})
+    display_import_summary(ExpenseImportResult(
+        imported=1,
+        skipped_duplicates=2,
+        errors=(ExpenseImportError(
+            row_number=4,
+            date="bad",
+            amount="1",
+            category="food",
+            description="Invalid",
+            reason="failed",
+        ),),
+    ))
     output = capsys.readouterr().out
-    assert "Imported Successfully" in output and "Row 4 failed" in output
+    assert "Imported Successfully" in output and "Row 4" in output

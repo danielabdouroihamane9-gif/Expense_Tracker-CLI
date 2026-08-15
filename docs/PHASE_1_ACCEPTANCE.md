@@ -14,7 +14,8 @@ Run from the repository root:
 The suite covers exact decimal arithmetic, stable IDs, UTC creation times,
 legacy JSON migration, configurable currency, cross-file currency mismatch
 protection, atomic replacement, backups, corruption recovery, interrupted and
-denied file operations, service rollback, budgets, reports, imports, exports,
+denied file operations, repository contracts, persistence-free service tests,
+typed service results, service rollback, budgets, reports, imports, exports,
 and CLI routing.
 
 ## Manual acceptance

@@ -24,7 +24,14 @@ expense_tracker/
 │   │   ├── __init__.py
 │   │   ├── budget_service.py
 │   │   ├── expense_tracker.py
-│   │   └── export_service.py
+│   │   ├── export_service.py
+│   │   ├── results.py
+│   │   └── settings_service.py
+│   │
+│   ├── repositories/
+│   │   ├── __init__.py
+│   │   ├── contracts.py
+│   │   └── exceptions.py
 │   │
 │   ├── storage/
 │   │   ├── __init__.py
@@ -36,6 +43,7 @@ expense_tracker/
 │   │   ├── formatters.py
 │   │   └── validators.py
 │   │
+│   ├── exceptions.py
 │   └── main.py
 │
 ├── data/
@@ -58,10 +66,10 @@ CLI Layer
 Services Layer
       │
       ▼
-Models Layer
+Repository Contracts ◄──── JSON Storage
       │
       ▼
-Storage Layer
+Models Layer
 
 Utilities
 (used by all layers)
@@ -84,6 +92,9 @@ The CLI layer does not contain business logic or persistence logic.
 ## Services Layer (`src/services`)
 
 The service layer contains the application's business logic.
+
+Services receive repository contracts through their constructors. They return
+domain objects or typed result values rather than terminal-formatted strings.
 
 ### ExpenseTrackerService
 
@@ -135,6 +146,13 @@ The Expense model:
 
 This keeps validation close to the data model itself.
 
+## Repository Contracts (`src/repositories`)
+
+Repository protocols define the persistence operations required by expenses,
+budgets, and settings. Services depend on these protocols and remain unaware of
+JSON files. Reusable contract tests allow later database repositories to prove
+the same behavior.
+
 ## Storage Layer (`src/storage`)
 
 The storage layer is responsible for persistence.
@@ -147,7 +165,11 @@ Current implementation:
 - atomic temporary-file replacement
 - previous-valid-document `.json.bak` backups
 - validated automatic recovery from corrupt or missing primary documents
-- explicit persistence exceptions for the services and CLI
+- explicit persistence exceptions mapped through the repository error contract
+
+`JSONStorage` implements the three repository protocols. JSON parsing, schema
+validation, backup naming, and atomic file operations remain confined to this
+layer.
 
 The storage layer isolates file operations from business logic, making future migration to a relational database straightforward.
 
@@ -192,7 +214,10 @@ Service
 Model
     │
     ▼
-Storage
+Repository Contract
+    ▲
+    │
+JSON Storage
 ```
 
 For example, when adding an expense:
@@ -201,8 +226,9 @@ For example, when adding an expense:
 2. The CLI collects the input.
 3. The service validates and processes the request.
 4. An Expense object is created.
-5. The storage layer saves the updated data.
-6. The CLI displays the result.
+5. The service saves through the expense repository contract.
+6. The injected JSON implementation persists the updated data.
+7. The CLI formats and displays the returned expense.
 
 ## Key Features
 
@@ -339,6 +365,7 @@ git push origin feature/add-reports
 Each layer has a single responsibility:
 - Models: Data structures
 - Services: Business logic
+- Repositories: Persistence contracts
 - Storage: Persistence
 - CLI: User interaction
 - Utils: Reusable helpers
@@ -370,11 +397,11 @@ This project is intentionally designed so that only the presentation and persist
 
 Current:
 
-CLI → Services → JSON Storage
+CLI → Services → Repository Contracts ← JSON Storage
 
 Future:
 
-Web API → Services → Django ORM → PostgreSQL
+Web API → Services → Repository Contracts ← Django ORM Adapter → PostgreSQL
 
 The service layer can be largely reused during the migration to Django REST Framework.
 ---

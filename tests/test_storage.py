@@ -116,6 +116,53 @@ def test_legacy_expense_uses_configured_currency(tmp_path):
     assert document["expenses"][0]["currency"] == "KMF"
 
 
+def test_transitional_v2_documents_without_envelope_currency_are_upgraded(
+    tmp_path,
+):
+    storage = JSONStorage(tmp_path)
+    storage.expenses_file.write_text(json.dumps({
+        "schema_version": 2,
+        "expenses": [{
+            "date": "2025-01-02",
+            "amount": "8.50",
+            "currency": "USD",
+            "category": "food",
+            "description": "Breakfast",
+        }],
+    }))
+    storage.budgets_file.write_text(json.dumps({
+        "schema_version": 2,
+        "budgets": {"food": "250.00"},
+    }))
+
+    expenses = storage.load_expenses()
+    budgets = storage.load_budgets()
+    assert expenses[0].currency == "USD"
+    assert budgets == {"food": Decimal("250.00")}
+
+    storage.save_expenses(expenses)
+    storage.save_budgets(budgets)
+    assert json.loads(storage.expenses_file.read_text())["currency"] == "USD"
+    assert json.loads(storage.budgets_file.read_text())["currency"] == "USD"
+
+
+def test_transitional_v2_expense_currency_conflict_is_rejected(tmp_path):
+    storage = JSONStorage(tmp_path)
+    storage.expenses_file.write_text(json.dumps({
+        "schema_version": 2,
+        "expenses": [{
+            "date": "2025-01-02",
+            "amount": "8.50",
+            "currency": "EUR",
+            "category": "food",
+            "description": "Breakfast",
+        }],
+    }))
+
+    with pytest.raises(DataCorruptionError, match="different currency"):
+        storage.load_expenses()
+
+
 @pytest.mark.parametrize(
     "filename, document, loader",
     [

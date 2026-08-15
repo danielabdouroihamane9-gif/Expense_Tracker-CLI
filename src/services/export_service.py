@@ -3,7 +3,11 @@
 import csv
 from datetime import datetime
 from pathlib import Path
+
+from src.exceptions import CSVImportError, CurrencyMismatchError, ExportError, NoDataError
 from src.utils import validate_currency
+
+from .results import ExportResult
 
 
 class ExportService:
@@ -16,7 +20,12 @@ class ExportService:
             export_dir (str): Directory for storing export files
         """
         self.export_dir = Path(export_dir)
-        self.export_dir.mkdir(exist_ok=True)
+        try:
+            self.export_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            raise ExportError(
+                f"Cannot create export directory '{self.export_dir}': {error}"
+            ) from error
         self.currency = validate_currency(currency)
 
     def export_expenses_to_csv(self, expenses, filename=None, category=None):
@@ -28,30 +37,30 @@ class ExportService:
             category (str): Filter by category (optional)
 
         Returns:
-            str: Success or error message
+            ExportResult: Path and count for the completed export.
         """
         if filename is None:
             filename = f"expenses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
+        if category:
+            expenses = [e for e in expenses if e.category == category.lower()]
+
+        if not expenses:
+            raise NoDataError("No expenses to export")
+
+        if any(expense.currency != self.currency for expense in expenses):
+            raise CurrencyMismatchError(
+                "Cannot export expenses that do not match "
+                f"application currency {self.currency}"
+            )
+
+        # Reverse to show oldest first in CSV
+        expenses = list(reversed(expenses))
+
+        filepath = self.export_dir / filename
         try:
-            if category:
-                expenses = [e for e in expenses if e.category == category.lower()]
-
-            if not expenses:
-                return "✗ No expenses to export"
-
-            if any(expense.currency != self.currency for expense in expenses):
-                return (
-                    "Cannot export expenses that do not match "
-                    f"application currency {self.currency}"
-                )
-
-            # Reverse to show oldest first in CSV
-            expenses = list(reversed(expenses))
-
-            filepath = self.export_dir / filename
-            with open(filepath, "w", newline="") as f:
-                writer = csv.writer(f)
+            with filepath.open("w", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file)
                 writer.writerow(
                     ["Date", "Amount", "Currency", "Category", "Description"]
                 )
@@ -67,9 +76,9 @@ class ExportService:
                         ]
                     )
 
-            return f"✓ Exported {len(expenses)} expenses to {filename}"
-        except IOError as e:
-            return f"✗ Error exporting to CSV: {e}"
+        except (OSError, csv.Error) as error:
+            raise ExportError(f"Cannot export expenses to '{filepath}': {error}") from error
+        return ExportResult(filepath, len(expenses), "expenses")
 
     def export_summary_to_csv(self, summary, filename=None, year=None, month=None):
         """Export monthly summary to CSV file.
@@ -81,7 +90,7 @@ class ExportService:
             month (int): Month (for filename generation)
 
         Returns:
-            str: Success or error message
+            ExportResult: Path and count for the completed export.
         """
         if filename is None:
             if year is None or month is None:
@@ -89,13 +98,13 @@ class ExportService:
                 year, month = today.year, today.month
             filename = f"summary_{year}_{month:02d}.csv"
 
-        try:
-            if not summary:
-                return "✗ No summary to export"
+        if not summary:
+            raise NoDataError("No summary to export")
 
-            filepath = self.export_dir / filename
-            with open(filepath, "w", newline="") as f:
-                writer = csv.writer(f)
+        filepath = self.export_dir / filename
+        try:
+            with filepath.open("w", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file)
                 writer.writerow(["Category", "Amount", "Currency"])
 
                 total = 0
@@ -106,9 +115,9 @@ class ExportService:
 
                 writer.writerow(["Total", total, self.currency])
 
-            return f"✓ Exported summary to {filename}"
-        except IOError as e:
-            return f"✗ Error exporting summary: {e}"
+        except (OSError, csv.Error) as error:
+            raise ExportError(f"Cannot export summary to '{filepath}': {error}") from error
+        return ExportResult(filepath, len(summary), "summary")
 
     def read_expenses_csv(self, file_path):
         """
@@ -118,53 +127,35 @@ class ExportService:
             file_path (str): Path to CSV file.
 
         Returns:
-            tuple:
-                bool: Success status
-                list: CSV rows if successful
-                list: Errors if failed
+            list[dict]: Normalized CSV rows.
         """
 
-        required_columns = {
-            "Date",
-            "Amount",
-            "Category",
-            "Description",
-        }
+        # Accept both CLI strings and standard os.PathLike objects.
+        if not str(file_path).strip():
+            raise CSVImportError("CSV file path cannot be empty")
 
-        errors = []
+        filepath = Path(file_path)
+
+        if filepath.suffix.lower() != ".csv":
+            raise CSVImportError("File must be a CSV file")
+
+        # If only a filename was provided, also search
+        # inside the default exports directory.
+        if not filepath.exists() and not filepath.parent.parts:
+            alternate_path = self.export_dir / filepath.name
+
+            if alternate_path.exists():
+                filepath = alternate_path
+
+        if not filepath.exists():
+            raise CSVImportError(f"CSV file does not exist: {filepath}")
 
         try:
-            # Accept both CLI strings and standard os.PathLike objects.
-            if not str(file_path).strip():
-                return False, [], []
-
-            filepath = Path(file_path)
-
-            if filepath.suffix.lower() != ".csv":
-                return False, [], [
-                    "File must be a CSV file."
-                ]
-
-            # If only a filename was provided, also search
-            # inside the default exports directory.
-            if not filepath.exists() and not filepath.parent.parts:
-                alternate_path = self.export_dir / filepath.name
-
-                if alternate_path.exists():
-                    filepath = alternate_path
-
-            if not filepath.exists():
-                return False, [], [
-                    "File does not exist."
-                ]
-
-            with open(filepath, "r", newline="") as file:
+            with filepath.open("r", newline="", encoding="utf-8-sig") as file:
                 reader = csv.DictReader(file)
 
                 if reader.fieldnames is None:
-                    return False, [], [
-                        "CSV file has no header."
-                    ]
+                    raise CSVImportError("CSV file has no header")
 
                 # Normalize CSV headers
                 normalized_headers = {
@@ -185,9 +176,9 @@ class ExportService:
                 )
 
                 if missing_columns:
-                    return False, [], [
+                    raise CSVImportError(
                         f"Missing columns: {', '.join(sorted(missing_columns))}"
-                    ]
+                    )
 
                 rows = []
 
@@ -207,13 +198,11 @@ class ExportService:
                     rows.append(normalized_row)
 
                 if not rows:
-                    return False, [], [
-                        "CSV file is empty."
-                    ]
+                    raise CSVImportError("CSV file is empty")
 
-                return True, rows, []
+                return rows
 
-        except IOError as e:
-            return False, [], [
-                f"Error reading CSV file: {e}"
-            ]
+        except CSVImportError:
+            raise
+        except (OSError, UnicodeError, csv.Error) as error:
+            raise CSVImportError(f"Cannot read CSV file '{filepath}': {error}") from error
