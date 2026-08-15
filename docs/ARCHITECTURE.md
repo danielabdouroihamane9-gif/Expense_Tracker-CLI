@@ -1,340 +1,133 @@
-# Expense Tracker - Architecture & Design
+# Current architecture
 
-## 📐 Class Diagram
+This document describes the implemented Roadmap Phase 1 application. It does
+not describe a future web application as though it already exists.
 
-```
-┌─────────────────────────────────┐
-│         Expense                 │
-├─────────────────────────────────┤
-│ - date: Date                    │
-│ - amount: Float                 │
-│ - category: String              │
-│ - description: String           │
-├─────────────────────────────────┤
-│ + __init__(date, amount, ...)   │
-│ + to_dict()                     │
-│ + from_dict(data)               │
-│ - _validate_date()              │
-│ - _validate_amount()            │
-│ - _validate_category()          │
-│ - _validate_description()       │
-└─────────────────────────────────┘
-         △
-         │ manages
-         │
-┌─────────────────────────────────┐
-│    ExpenseTracker               │
-├─────────────────────────────────┤
-│ - expenses: List[Expense]       │
-├─────────────────────────────────┤
-│ + add_expense(...)              │
-│ + get_all_expenses()            │
-│ + get_by_category()             │
-│ + get_monthly_summary()         │
-│ + delete_expense()              │
-│ + save_to_file()                │
-│ + load_from_file()              │
-└─────────────────────────────────┘
-         △
-         │ reads/writes
-         │
-┌─────────────────────────────────┐
-│   expenses.json                 │
-│  (File Persistence)             │
-└─────────────────────────────────┘
-```
-
-## 🔄 Data Flow Diagram
+## Dependency direction
 
 ```text
-                   User
-                     │
-                     ▼
-             CLI Presentation Layer
-                     │
-                     ▼
-            Business Services Layer
-                     │
-                     ▼
-               Domain Models Layer
-                     │
-                     ▼
-              Storage / Persistence
-                     │
-                     ▼
-                 JSON Files
-
-
-Shared Utilities
-──────────────────────────────────────
-Validators
-Formatters
-``````
-
-## 🎯 Feature Implementation Map
-
-```
-CLI Menu (main())
-│
-├─► 1. Add Expense
-│   ├─► get_user_date() → validate date
-│   ├─► get_user_amount() → validate amount
-│   ├─► get_user_category() → validate category
-│   ├─► input description → validate description
-│   └─► tracker.add_expense() → Expense class
-│       └─► validate → create → save to file
-│
-├─► 2. View All Expenses
-│   ├─► tracker.get_all_expenses()
-│   ├─► sorted by date (newest first)
-│   └─► display_expenses_table()
-│       └─► formatted output with f-strings
-│
-├─► 3. Filter by Category
-│   ├─► get_user_category()
-│   ├─► tracker.get_by_category()
-│   │   └─► returns filtered list
-│   └─► display_expenses_table()
-│
-├─► 4. Monthly Summary
-│   ├─► tracker.get_monthly_summary()
-│   │   └─► sums by category
-│   └─► display_summary()
-│       └─► formatted box output
-│
-└─► 5. Exit
-    └─► All data already saved
+src/main.py
+    |
+    v
+src/application.py (composition root)
+    |
+    +--> CLI presentation
+    |        |
+    |        v
+    +--> application services --> repository protocols <-- JSONStorage
+                      |
+                      v
+             Expense model and validation
 ```
 
-## 📊 Validation Pipeline
+Outer components depend on stable inner behavior. Services receive repository,
+clock, and UUID dependencies through constructors. The CLI receives constructed
+services and owns all user-facing input and messages.
 
-```
-User Input
-    │
-    ▼ (1)
-┌──────────────────────┐
-│ Input from user      │
-│ (raw string)         │
-└──────┬───────────────┘
-       │
-       ▼ (2)
-┌──────────────────────┐      Valid?
-│ Specific Validator   │─────────────► ✓ Return value
-│ (date, amount, etc)  │
-└──────┬───────────────┘
-       │ Invalid
-       ▼ (3)
-┌──────────────────────┐
-│ Raise ValueError     │
-│ Custom message       │─────────► Show to user
-└──────┬───────────────┘
-       │
-       ▼ (4)
-┌──────────────────────┐
-│ User re-enters       │──► Loop back to (2)
-│ (chance to fix)      │
-└──────────────────────┘
-```
+## Components
 
-## 🗂️ File Structure
+### Entry point and composition
 
-```
-Expense Tracker Project
-│
-├── expense_tracker.py           (Main application)
-│   ├── Expense class
-│   │   ├── __init__()
-│   │   ├── to_dict()
-│   │   ├── from_dict()
-│   │   └── validation methods
-│   │
-│   ├── ExpenseTracker class
-│   │   ├── __init__()
-│   │   ├── CRUD methods
-│   │   ├── persistence methods
-│   │   └── helper methods
-│   │
-│   ├── Display functions
-│   │   ├── display_expenses_table()
-│   │   └── display_summary()
-│   │
-│   ├── User input functions
-│   │   ├── get_user_date()
-│   │   ├── get_user_amount()
-│   │   └── get_user_category()
-│   │
-│   └── main() - CLI menu loop
-││
-├── expenses.json                (Data file - auto-created)
-│   └── Array of expense objects
-│
-└── Documentation files:
-    ├── BUILD_SUMMARY.md         (This summary)
-    ├── EXPENSE_TRACKER_README.md (Full reference)
-    ├── QUICK_START.md           (Quick guide)
-    └── EXAMPLES.md              (Usage examples)
-```
+`src/main.py` configures safe console output, calls `create_application()`,
+runs the application, and converts startup persistence failures into a nonzero
+exit code.
 
-## 🔀 State Flow
+`src/application.py` is the only production composition root. It constructs
+`ApplicationConfig`, providers, `JSONStorage`, services, commands, and `Menu`.
+One repository instance implements all three repository protocols.
 
-```
-┌─────────────────────────────────────────┐
-│ Application Starts                      │
-└────────────┬────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────┐
-│ ExpenseTracker.__init__()               │
-│ └─ load_from_file()                     │
-│    └─ Load expenses.json (if exists)    │
-└────────────┬────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────┐
-│ main() - Display Menu & Get Choice      │
-└────────────┬────────────────────────────┘
-             │
-    ┌────────┴────────┬─────────┬─────────┬─────────┐
-    │                 │         │         │         │
-    ▼                 ▼         ▼         ▼         ▼
-  Choice=1          =2         =3        =4        =5
-  Add Expense      View All   Filter    Summary    Exit
-    │                │         │         │         │
-    ▼                ▼         ▼         ▼         ▼
-┌──────────┐  ┌──────────┐ ┌──────┐ ┌──────┐  ┌──────┐
-│Validate  │  │Get All   │ │Get By│ │Get   │  │Save  │
-│& Create  │  │Expenses  │ │Cat.  │ │Month.│  │&Exit │
-│Expense   │  │Display   │ │Disp. │ │Disp. │  │      │
-└────┬─────┘  └────┬─────┘ └──┬───┘ └──┬───┘  └──┬───┘
-     │             │          │       │         │
-     ▼             ▼          ▼       ▼         ▼
-  Save File    Back to    Back to   Back to   End
-              Menu       Menu      Menu
+### Domain and validation
+
+`Expense` is the current domain entity. Its invariants include:
+
+- a valid UUID;
+- an occurrence date;
+- a positive `Decimal` quantized to two fractional digits;
+- the configured three-letter currency;
+- one of eight supported categories;
+- a nonempty description;
+- a timezone-aware creation timestamp normalized to UTC.
+
+Budgets are currently `dict[str, Decimal]`. Settings are currently a mapping
+containing the application currency. They have service and repository rules,
+but no dedicated model classes.
+
+### Services
+
+- `ExpenseTrackerService` owns expense CRUD, search, filtering, sorting,
+  reports, and import mutation.
+- `BudgetService` owns category budgets and budget-status calculations.
+- `SettingsService` prevents currency changes from silently relabelling
+  existing financial data.
+- `ExportService` reads and writes currency-aware CSV files.
+
+Services return domain objects or typed result values. They do not return
+terminal-decorated success messages.
+
+### Repository boundary
+
+The expense, budget, and settings protocols currently load and save complete
+collections. `JSONStorage` satisfies them structurally. Reusable contract tests
+define the minimum behavior for another adapter.
+
+Whole-collection contracts are appropriate for this small single-process CLI,
+but they are not the final multi-user database design. A Django adapter may
+temporarily satisfy them during migration; granular queries, writes, and
+explicit transaction boundaries must replace them before concurrent or
+high-volume operation.
+
+### JSON persistence
+
+`JSONStorage` validates complete versioned documents. Saves use a temporary
+file, flush, and atomic replacement. The previous valid primary is stored as a
+`.bak` file. Recovery uses a backup only after it passes the same validation.
+Future schema versions and unrecoverable corruption are explicit failures.
+
+See [DATA_SCHEMA.md](DATA_SCHEMA.md) and
+[PERSISTENCE_RELIABILITY.md](PERSISTENCE_RELIABILITY.md).
+
+## Runtime flows
+
+### Startup
+
+```text
+environment -> ApplicationConfig -> JSONStorage -> initialize settings
+            -> construct services -> construct CLI -> run menu
 ```
 
-## 💾 JSON Schema
+The initial configured currency is persisted only when settings do not exist.
+Persisted settings remain authoritative on later starts.
 
-```json
-[
-  {
-    "date": "YYYY-MM-DD",           // ISO 8601 format
-    "amount": 50.00,                // Float, 2 decimals
-    "category": "food",             // One of 7 categories
-    "description": "string"         // Non-empty description
-  },
-  ...
-]
+### Expense mutation
+
+```text
+terminal input -> CommandHandler validation -> ExpenseTrackerService
+               -> Expense validation -> repository save -> CLI result
 ```
 
-## 🎭 Interaction Pattern
+If persistence fails, the service restores its prior in-memory state before
+the error reaches the CLI.
 
-```
-┌─────────────────────────────────────────┐
-│ User Perspective                        │
-│                                         │
-│ 1. See menu                             │
-│ 2. Choose option (1-5)                  │
-│ 3. Provide information (if applicable)  │
-│ 4. See result/feedback                  │
-│ 5. Back to menu                         │
-│ 6. Exit when done                       │
-└─────────────────────────────────────────┘
-         ▲              ▼
-         └──────────────┘
-              Loop
+### Load and recovery
 
-
-┌─────────────────────────────────────────┐
-│ System Perspective                      │
-│                                         │
-│ 1. Load data from file (startup)        │
-│ 2. Show menu to user                    │
-│ 3. Process user choice                  │
-│ 4. Validate any user input              │
-│ 5. Update internal state                │
-│ 6. Save to file                         │
-│ 7. Display result to user               │
-│ 8. Loop back to step 2                  │
-│ 9. Save and exit on user request        │
-└─────────────────────────────────────────┘
+```text
+read primary -> validate complete document -> return values
+       |
+       `-- corrupt/missing -> validate backup -> atomic restore -> warning
 ```
 
-## 🔍 Error Handling Strategy
+Unsupported newer schemas and unreadable files do not fall back silently.
 
-```
-User Input (raw string)
-         │
-         ▼
-    Try Block
-         │
-    ┌────┴────┐
-    │          │
-    ▼          ▼
-Success    Exception
-    │          │
-    ▼          ▼
- Return    Catch Error
- Value   (ValueError, etc)
-         │
-         ▼
-    Custom Message
-    (user-friendly)
-         │
-         ▼
-    Log/Display Error
-         │
-         ▼
-    Prompt Retry
-    or Exit
-```
+## Configuration and determinism
 
-## 📈 Performance
+Runtime paths and the initial currency belong to `ApplicationConfig`. Time and
+UUID creation are isolated behind protocols, allowing deterministic tests and
+repeatable legacy migrations. Details are in
+[APPLICATION_COMPOSITION.md](APPLICATION_COMPOSITION.md).
 
-```
-Operation          Time Complexity    Space Complexity
-─────────────────────────────────────────────────────
-Add Expense        O(1)               O(1)
-Get All            O(n)               O(n)
-Get by Category    O(n)               O(k) where k ≤ n
-Monthly Summary    O(n)               O(7) = O(1)
-Save to File       O(n)               O(n)
-Load from File     O(n)               O(n)
+## Current boundary
 
-Where n = total number of expenses
-```
-
-## 🎓 Design Principles Used
-
-```
-✓ SOLID Principles
-  ├─ Single Responsibility
-  │  └─ Expense handles validation
-  │  └─ ExpenseTracker handles operations
-  │  └─ UI functions handle display
-  │
-  ├─ Open/Closed
-  │  └─ Easy to add new categories
-  │  └─ Easy to add new features
-  │
-  └─ Dependency Inversion
-     └─ Functions accept objects, not primitives
-
-✓ DRY (Don't Repeat Yourself)
-  ├─ Validation logic in one place
-  ├─ Display format in one function
-  └─ Input prompts in helper functions
-
-✓ KISS (Keep It Simple, Stupid)
-  ├─ Minimal dependencies (only json, datetime)
-  ├─ Clear naming conventions
-  └─ Focused responsibility per class/function
-
-✓ Fail Early
-  ├─ Validate inputs immediately
-  ├─ Clear error messages
-  └─ User can fix and retry
-```
-
----
-
-**Diagrams & Design Documentation Complete** ✓
+The application is local, single-user, and JSON-backed. Roadmap Phase 1 does
+not implement Django, an HTTP API, PostgreSQL, authentication, authorization,
+multi-user ownership, background jobs, or AI/ML. The future handoff is mapped
+in [DJANGO_MIGRATION_READINESS.md](DJANGO_MIGRATION_READINESS.md).

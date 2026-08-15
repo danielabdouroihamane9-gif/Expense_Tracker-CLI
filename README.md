@@ -1,460 +1,134 @@
 # Expense Tracker CLI
 
-A professional, modular expense tracking application built with Python, demonstrating clean architecture principles and best practices for scalable software design.
+A local command-line expense tracker built with Python. The project is the
+stabilized foundation of Roadmap Phase 1: business rules are separated from
+terminal presentation and JSON persistence so later Django work can reuse the
+domain behavior instead of rewriting it.
 
-**Status:** Phase 1 stabilization in progress — Milestones 1–5 implemented
+## Current capabilities
 
-This project represents the foundation of a Python Full-Stack + AI Backend Development learning journey. It showcases a professional separation of concerns architecture designed to scale seamlessly into Phase 2 (API layer), Phase 3 (Database integration), and beyond.
+- Add, edit, duplicate, inspect, search, filter, sort, and delete expenses.
+- Set category budgets and view monthly budget status.
+- Generate monthly, statistical, category, and top-category reports.
+- Import and export currency-aware CSV data.
+- Configure one application currency; the initial default is `USD`.
+- Store exact two-decimal monetary values, stable expense UUIDs, occurrence
+  dates, and UTC creation timestamps in versioned JSON documents.
+- Protect local data with validation, atomic replacement, backups, and recovery.
+- Run through explicit application composition and repository contracts.
 
----
+## Requirements
 
-## 🎯 Quick Start
+- Python 3.11, 3.12, 3.13, or 3.14
+- A terminal such as PowerShell
 
-### Run the Application (5 seconds)
-```bash
-# Activate virtual environment
-.\.venv\Scripts\Activate
+The application currently lists `pandas`, `numpy`, and `openpyxl` as runtime
+dependencies. Their continued need is evaluated at the Phase 1 release gate.
 
-# Run the app
+## Quick start
+
+```powershell
+git clone <repository-url>
+cd expense_tracker
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 python -m src.main
 ```
 
-**That's it!** The interactive menu will guide you through all features.
+The default data and export directories are `data/` and `exports/`. Runtime
+JSON, backup, CSV, environment, coverage, and cache files are ignored by Git.
 
-### Optional runtime configuration
-
-The CLI defaults to `data`, `exports`, and an initial currency of `USD`. These
-values can be configured without code changes:
+For an isolated manual run:
 
 ```powershell
-$env:EXPENSE_TRACKER_DATA_DIR = "tmp/demo-data"
-$env:EXPENSE_TRACKER_EXPORT_DIR = "tmp/demo-exports"
+$env:EXPENSE_TRACKER_DATA_DIR = "tmp/manual-data"
+$env:EXPENSE_TRACKER_EXPORT_DIR = "tmp/manual-exports"
 $env:EXPENSE_TRACKER_DEFAULT_CURRENCY = "KMF"
 python -m src.main
 ```
 
-See [Application Composition and Runtime Configuration](docs/APPLICATION_COMPOSITION.md)
-for the dependency graph, configuration rules, and cleanup commands.
+The default currency is used only when settings do not yet exist. After the
+first run, the persisted setting is authoritative. Currency can be changed in
+the CLI only while no expenses or budgets exist.
 
----
+See [QUICK_START.md](QUICK_START.md) for the complete setup and verification
+workflow.
 
-## 📋 Project Overview
+## Main menu
 
-The Expense Tracker CLI demonstrates:
-
-- Object-Oriented Programming using Python classes
-- Separation of concerns between CLI, services, models, storage, and utilities
-- Service-layer architecture for business logic management
-- JSON-based data persistence
-- Input validation and error handling
-- CSV import and export functionality
-- Modular and maintainable project organization
-- Manual functional testing of implemented workflows
-
----
-
-## Implemented Features
-
-## Expense Management
-
-- Add expenses
-- View all expenses
-- View expense details
-- Edit expenses
-- Delete expenses
-- Clear expenses
-- Search expenses
-- Filter by category
-- Filter by date range
-- Sort expenses
-- Duplicate expenses
-
-
-## Budget Management
-
-- Set budgets
-- Edit budgets
-- View budgets
-- Delete budgets
-- Clear budgets
-- View budget status
-
-
-## Reports
-
-- Monthly expense summary
-- Expense statistics
-- Spending by category
-- Top spending categories
-
-
-## Import and Export
-
-- Export expenses to CSV
-- Export monthly summaries to CSV
-- Import expenses from CSV
-- Detect duplicate expenses during import
-
----
-
-## 📁 Modern Project Structure
-
-```
-expense-tracker/
-│
-├── src/                          # Application source code
-│   ├── main.py                   # Entry point
-│   │
-│   ├── models/                   # Application data models
-│   │   └── expense.py           # Expense class with validation
-│   │
-│   ├── services/                 # Business logic layer
-│   │   ├── expense_tracker.py   # Core CRUD operations
-│   │   ├── budget_service.py    # Budget management
-│   │   └── export_service.py    # CSV export functionality
-│   │
-│   ├── storage/                  # Persistence layer
-│   │   └── json_storage.py      # JSON file I/O
-│   │
-│   ├── cli/                      # Command-line interface layer
-│   │   ├── menu.py              # Interactive menu system
-│   │   └── commands.py          # Command handlers
-│   │
-│   └── utils/                    # Shared validation and formatting utilities
-│       ├── validators.py        # Input validation
-│       └── formatters.py        # Output formatting
-│
-├── data/                         # JSON data storage
-│   ├── expenses.json
-│   └── budgets.json
-│
-├── exports/                      # Generated CSV files
-│
-├── docs/                         # Technical documentation
-│
-├── README.md                     # This file
-├── QUICK_START.md               # Quick reference guide
-├── STRUCTURE.md                 # Detailed architecture
-├── requirements.txt             # Dependencies
-├── LICENSE                      # MIT License
-└── .gitignore                   # Git configuration
-```
-
----
-### 8. Interactive CLI Menu
-User-friendly terminal interface.
-- Clear navigation
-- Helpful error messages
-- Case-insensitive input
-- Graceful error handling
-
-### 9. Professional Code Quality
-Production-ready implementation.
-- 35+ automated tests
-- Type hints in docstrings
-- Clear, maintainable code structure
-- Comprehensive error messages
-
----
-
-## 🏗️ Architecture Principles
-
-This project demonstrates professional software design:
-
-### 1. **Separation of Concerns**
-- **Models** define data structures (`Expense` class)
-- **Services** implement business logic (CRUD, budgets, exports)
-- **Storage** handles persistence (JSON file I/O)
-- **CLI** manages user interaction (menu, commands)
-- **Utils** provide reusable helpers (validators, formatters)
-
-### 2. **Dependency Injection Pattern**
-Services don't create their own dependencies—they receive them, making code testable and flexible.
-
-### 3. **Single Responsibility Principle**
-Each class has one reason to change. The `Expense` class validates expenses; the `ExpenseTracker` service manages collections; the `JsonStorage` class handles file I/O.
-
-### 4. **DRY (Don't Repeat Yourself)**
-- Validation logic centralized in `validators.py`
-- Output formatting centralized in `formatters.py`
-- Reusable service classes
-
-### 5. **Mockable Design**
-File I/O is abstracted in a storage layer, making it easy to replace JSON with a database later without changing business logic.
-
----
-
-## 🚀 Installation & Setup
-
-### 1. Prerequisites
-- Python 3.10 or higher
-- Terminal / Command Prompt
-
-### 2. Verify Python
-```bash
-python --version
-```
-
-Supported versions are Python 3.11 through 3.14.
-
-### 3. Create Virtual Environment
-```bash
-python -m venv venv
-```
-
-### 4. Activate Virtual Environment
-
-**Windows PowerShell:**
-```bash
-.\.venv\Scripts\Activate
-```
-
-**If activation blocked, run:**
-```bash
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-.\.venv\Scripts\Activate
-```
-
-**macOS / Linux:**
-```bash
-source venv/bin/activate
-```
-
-### 5. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 6. Run the Application
-```bash
-python -m src.main
-```
-
-You should see the main menu:
-```
-============================================================
-   Expense Tracker CLI - Manage Your Finances with Ease
-============================================================
-
-Main Menu:
+```text
 1. Expense Management
 2. Budget Management
 3. Reports
 4. Export
+5. Settings (Currency: USD)
 0. Exit
-
-Enter your choice (0-5): ```
-
----
-
-## 📖 Usage Examples
-
-### Interactive Mode (Recommended for First-Time Use)
-```bash
-python -m src.main
-```
-Then select options from the menu.
-
-### Example: Adding an Expense
-```
-Menu selection: 1
-
---- Add Expense ---
-Enter date (YYYY-MM-DD) [press Enter for today]: 2026-06-07
-Enter amount (USD): 50.00
-Enter category (food/transport/rent/utilities/entertainment/healthcare/other): food
-Enter description: Lunch at downtown restaurant
-
-✓ Expense added: USD 50.00 (food) on 2026-06-07
 ```
 
-### Example: Viewing Budget Status
-```
-Menu selection: 6
+The Export section contains both expense import and export workflows. The
+detailed menu map is maintained in [PROJECT_INDEX.md](PROJECT_INDEX.md).
 
-Budget Status:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Category     Spent    Budget    Remaining    Status
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-food         USD 200.00  USD 300.00   USD 100.00      ✓
-transport    USD 75.00   USD 150.00   USD 75.00       ✓
-rent         USD 600.00  USD 600.00   USD 0.00        ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+## Development checks
 
-### Example: Monthly Summary
-```
-Menu selection: 4
+Install the development dependencies, then run the same gates used by CI:
 
-Monthly Summary (June 2026):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-food         USD 150.00
-transport    USD 80.00
-rent         USD 600.00
-utilities    USD 120.00
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TOTAL        USD 950.00
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pip check
+python -m ruff check .
+python -m ruff format --check .
+python -m compileall -q src tests
+python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85 -q
 ```
 
----
-## 📚 Documentation
+GitHub Actions runs static checks on Python 3.14 and the test suite on every
+supported Python version. Details are in
+[docs/QUALITY_AUTOMATION.md](docs/QUALITY_AUTOMATION.md).
 
-| File | Purpose | Read Time |
-|------|---------|-----------|
-| **QUICK_START.md** | Fast 5-minute guide | 5 min |
-| **STRUCTURE.md** | Detailed architecture explanation | 10 min |
-| **docs/ARCHITECTURE.md** | System design and diagrams | 15 min |
-| **docs/BUILD_SUMMARY.md** | Implementation details | 10 min |
+## Architecture
 
----
+The dependency direction is:
 
-## 🎓 Learning Outcomes
+```text
+CLI -> application services -> repository protocols <- JSON storage
+                    |
+                    v
+             domain validation
+```
 
-This project demonstrates practical understanding of:
+`src/application.py` is the composition root. Services do not construct JSON
+storage, and `src/main.py` remains a thin executable entry point. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and
+[STRUCTURE.md](STRUCTURE.md).
 
-### Python Fundamentals
-- Classes and OOP principles
-- Data structures (lists, dictionaries, sets)
-- File I/O and JSON serialization
-- Error handling and validation
-- Functions and modularity
+## Data safety
 
-### Software Engineering
-- Separation of concerns
-- Design patterns (single responsibility, dependency injection)
-- Test-driven development
-- Code organization and maintainability
-- Documentation and communication
+Version 2 JSON uses decimal strings rather than binary floats. Existing valid
+documents are backed up before replacement, and corrupt primary documents are
+restored only from backups that pass the same validation. Never edit or delete
+the primary and `.bak` files without first making an external copy.
 
-### Best Practices
-- Clear variable and function naming
-- DRY (Don't Repeat Yourself) principle
-- Comprehensive error messages
-- Professional code structure
-- Version control readiness
+See [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md) and
+[docs/PERSISTENCE_RELIABILITY.md](docs/PERSISTENCE_RELIABILITY.md).
 
----
+## Roadmap status
 
-## Architecture Overview
+This repository is still in **Roadmap Phase 1**. Milestones 1 through 6 are
+complete. Milestone 7 is the release gate. No HTTP API, Django application, database,
+authentication, multi-user system, or AI/ML feature is implemented here.
 
-The application follows a layered architecture:
-CLI Layer
-|
-v
-Services Layer
-|
-v
-Models Layer
-|
-v
-Storage Layer
+The authoritative status is
+[docs/PHASE_1_UPGRADE_ROADMAP.md](docs/PHASE_1_UPGRADE_ROADMAP.md). The future
+Django mapping is design guidance, not implemented code:
+[docs/DJANGO_MIGRATION_READINESS.md](docs/DJANGO_MIGRATION_READINESS.md).
 
-### CLI Layer
+## Documentation
 
-Responsible for:
-- User interaction
-- Menu navigation
-- Calling application services
+Use [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) as the canonical document
+map. Historical completion reports that contradicted the current roadmap were
+removed; Git history remains the source for those past snapshots.
 
-### Services Layer
+## License
 
-Responsible for:
-- Expense operations
-- Budget operations
-- Reports
-- Import/export logic
-
-### Models Layer
-
-Responsible for:
-- Application data representation
-- Validation during object creation
-
-### Storage Layer
-
-Responsible for:
-- Saving and loading persistent data
-
-Current storage:
-- JSON files
-
-Future storage:
-- Database through Django ORM
-
----
-
-## Future Development
-
-The long-term direction of this project is migration into a full-stack financial application.
-
-Planned evolution:
-
-Phase 2:
-- Web fundamentals
-- HTTP concepts
-- REST API design
-- Django fundamentals
-
-Phase 3:
-- Django REST Framework backend
-- Database integration
-- Authentication
-- API development
-
-Future AI/ML integration:
-- Spending analysis
-- Financial insights
-- Intelligent recommendations
-- Predictive analytics
----
-
-## Testing Approach
-
-The project is currently verified through manual functional testing.
-
-The following workflows have been manually tested:
-
-- Expense creation and management
-- Budget management
-- Reports generation
-- CSV export
-- CSV import
-- Data persistence
-
-Automated testing infrastructure is not currently included.
----
-
-## ✅ Project Status
-
-**Phase 1 — Core Python Mastery:** ✅ Complete
-
-**Completed:**
-- ✅ Modular architecture (models, services, storage, cli, utils)
-- ✅ All core features implemented
-- ✅ Comprehensive testing (35+ tests)
-- ✅ Professional documentation
-- ✅ Production-ready code quality
-- ✅ Backward compatible data persistence
-- ✅ Scalable design for future phases
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License. See `LICENSE` file for details.
-
----
-
-## 🎯 Quick Navigation
-
-**First time?** → Start with `QUICK_START.md`
-
-**Want to understand the code?** → Read `STRUCTURE.md` then browse `src/` folder
-
-**Running into issues?** → Check `docs/` folder for detailed guides
-
-**Ready to extend?** → Look at `src/services/` for examples of adding new features
-
----
-
-**Happy tracking! 📊**
+See [LICENSE](LICENSE).
