@@ -1,183 +1,74 @@
-# Quick Start Guide - Expense Tracker
+# Quick start and verification
 
-Get the expense tracker running in **5 minutes**.
+## 1. Create the environment
 
----
+From the repository root:
 
-## ⚡ Quick Start (30 seconds)
-
-```bash
-# 1. Activate virtual environment
-.\.venv\Scripts\Activate
-
-# 2. Run the app
-python -m src.main
-
-# Done! Use the interactive menu
-```
-
-**Expected Output:**
-```
-============================================================
-   Expense Tracker CLI - Phase 1
-============================================================
-
-Menu:
-1. Add Expense
-2. View All Expenses
-3. Filter by Category
-4. Monthly Summary
-5. Set Budget
-6. View Budget Status
-7. View All Budgets
-8. Export Expenses to CSV
-9. Export Summary to CSV
-0. Exit
-
-Enter your choice (0-9): _
-```
-
----
-
-## 🔧 Setup (if first time)
-
-### Step 1: Create Virtual Environment
-```bash
+```powershell
 python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements-dev.txt
+python -m pip check
 ```
 
-### Step 2: Activate Virtual Environment
+If PowerShell blocks activation, either update the execution policy for the
+current process or invoke `.\.venv\Scripts\python.exe` directly.
 
-**Windows PowerShell:**
-```bash
-.\.venv\Scripts\Activate
-```
+## 2. Run safely with isolated data
 
-**If blocked:**
-```bash
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-.\.venv\Scripts\Activate
-```
-
-**macOS/Linux:**
-```bash
-source .venv/bin/activate
-```
-
-### Step 3: Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### Step 4: Run
-```bash
+```powershell
+$env:EXPENSE_TRACKER_DATA_DIR = "tmp/quick-start-data"
+$env:EXPENSE_TRACKER_EXPORT_DIR = "tmp/quick-start-exports"
+$env:EXPENSE_TRACKER_DEFAULT_CURRENCY = "USD"
 python -m src.main
 ```
 
----
+Suggested smoke workflow:
 
-## 📋 Project Structure
+1. Open **Settings** and confirm `USD`.
+2. Add an expense with amount `12.345`; confirm it displays as `USD 12.35`.
+3. View its details; confirm the UUID and UTC creation timestamp appear.
+4. Set a budget for the same category and view Budget Status.
+5. Export expenses, then inspect the CSV under the isolated export directory.
+6. Exit and restart; confirm the expense and budget reload.
 
-```
-src/
-├── main.py                    # Entry point (run this!)
-├── models/expense.py          # Data structures
-├── services/                  # Business logic
-│   ├── expense_tracker.py
-│   ├── budget_service.py
-│   └── export_service.py
-├── storage/json_storage.py    # Data persistence
-├── cli/                       # User interface
-│   ├── menu.py
-│   └── commands.py
-└── utils/                     # Helpers
-    ├── validators.py
-    └── formatters.py
-```
+Do not run manual experiments against important files in `data/`. Isolated
+directories make verification repeatable and protect real records.
 
----
+## 3. Inspect version 2 JSON
 
-## ✨ Key Features
-
-✅ Add/view/filter expenses  
-✅ Monthly summaries  
-✅ Budget tracking & alerts  
-✅ Export to CSV  
-✅ Full data persistence  
-✅ 35+ automated tests  
-
----
-
-## 🎯 Common Tasks
-
-### Add an Expense
-```
-Menu choice: 1
-Date (YYYY-MM-DD) [Enter for today]: 2026-06-07
-Amount (USD): 50.00
-Category: food
-Description: Lunch
+```powershell
+Get-Content tmp\quick-start-data\expenses.json
+Get-Content tmp\quick-start-data\budgets.json
+Get-Content tmp\quick-start-data\settings.json
 ```
 
-### View All Expenses
-```
-Menu choice: 2
-```
+Expected top-level fields include `schema_version` and `currency`. Expense
+records also include `id`, `occurred_on`, `amount`, `currency`, `category`,
+`description`, and `created_at`. See
+[docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md) for the exact contract.
 
-### Filter by Category
-```
-Menu choice: 3
-Enter category: food
-```
+## 4. Run automated verification
 
-### Check Budget Status
-```
-Menu choice: 6
+```powershell
+python -m ruff check .
+python -m ruff format --check .
+python -m compileall -q src tests
+python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85 -q
 ```
 
-### Set a Budget
-```
-Menu choice: 5
-Category: food
-Amount: 300
-```
+The test suite uses temporary directories and checks that repository
+production data is unchanged.
 
-### Export to CSV
-```
-Menu choice: 8
-```
+## 5. Clear the temporary environment variables
 
----
-
-## 🧪 Run Tests
-
-```bash
-python -m pytest tests/ -v
+```powershell
+Remove-Item Env:EXPENSE_TRACKER_DATA_DIR
+Remove-Item Env:EXPENSE_TRACKER_EXPORT_DIR
+Remove-Item Env:EXPENSE_TRACKER_DEFAULT_CURRENCY
 ```
 
-Or direct:
-```bash
-python tests/test_expense_tracker.py
-```
-
-**Coverage:** 35+ tests, 100% pass rate
-
----
-
-## 📚 Documentation
-
-- **README.md** - Full project overview
-- **STRUCTURE.md** - Detailed architecture
-- **docs/ARCHITECTURE.md** - System design
-- **docs/BUILD_SUMMARY.md** - Implementation details
-
----
-
-## ✅ You're Ready!
-
-Start tracking expenses:
-```bash
-python -m src.main
-```
-
-**Have questions?** Check `STRUCTURE.md` for architecture details.
+The temporary files remain ignored by Git and may be inspected after the run.
+The full quality policy is in
+[docs/QUALITY_AUTOMATION.md](docs/QUALITY_AUTOMATION.md).

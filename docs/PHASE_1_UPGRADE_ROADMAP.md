@@ -13,7 +13,7 @@ document are upgrades **within Roadmap Phase 1**. They are not roadmap phases.
 | 3. Repository and Service Boundaries | Decouple business rules from JSON and CLI details | Complete |
 | 4. Application Composition and Configuration | Centralize dependency construction and runtime configuration | Complete |
 | 5. Quality Automation | Automate tests, coverage, style checks, and CI | Complete |
-| 6. Documentation and Migration Readiness | Align documentation and prepare the Django handoff | Pending |
+| 6. Documentation and Migration Readiness | Align documentation and prepare the Django handoff | Complete |
 | 7. Phase 1 Release Gate | Complete acceptance and publish a stable Phase 1 release | Pending |
 
 ## Milestone 1 - Data Foundation
@@ -100,14 +100,27 @@ Completed capabilities:
 
 ## Milestone 6 - Documentation and Migration Readiness
 
-- Align `README.md`, `PROJECT_INDEX.md`, `STRUCTURE.md`, and architecture
-  documentation with the actual application.
-- Remove obsolete menu commands and examples.
-- Document schemas, migration rules, repository contracts, and composition.
-- Record architectural decisions for Decimal, UUID, currency, and storage.
-- Map the Python domain model to future Django models.
-- Create a Django migration checklist without implementing Django.
-- Remove claims that FastAPI is the selected framework.
+Completed capabilities:
+
+- Aligned the root orientation, project index, structure, setup, architecture,
+  build summary, and release checklist with the implemented application.
+- Replaced obsolete menu, test-count, Python-version, and completion claims.
+- Consolidated active documentation around the existing schema, persistence,
+  repository, composition, and quality contracts.
+- Recorded accepted decisions for Decimal money, UUID identity, dates and UTC
+  timestamps, application currency, repository boundaries, versioned atomic
+  JSON, composition, and deterministic providers.
+- Mapped current expenses, budget mappings, and settings to future Django
+  concepts without presenting proposed models as implemented code.
+- Documented source validation, transactional import, reconciliation, cutover,
+  retention, and rollback requirements for a later Django migration.
+- Recorded the scalability limit of whole-collection repository contracts and
+  the need for granular transactional interfaces before multi-user use.
+- Removed obsolete active completion reports while retaining their history in
+  Git.
+- Added automated checks for local documentation links and known stale claims.
+- Confirmed Django is the later selected framework and that no web framework is
+  implemented during Phase 1.
 
 ## Milestone 7 - Phase 1 Release Gate
 

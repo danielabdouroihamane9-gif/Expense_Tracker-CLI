@@ -1,497 +1,107 @@
-# Project Structure
-
-This document explains the architecture of the Expense Tracker CLI application and the responsibility of each component.
-The project follows a layered architecture that separates user interaction, business logic, data models, persistence, and reusable utilities. This separation improves maintainability and prepares the application for migration to a Django REST Framework backend in future phases.
----
-
-## Directory Structure
+# Repository structure
 
 ```text
 expense_tracker/
-
-├── src/
-│
-│   ├── cli/
-│   │   ├── __init__.py
-│   │   ├── commands.py
-│   │   └── menu.py
-│   │
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── expense.py
-│   │
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── budget_service.py
-│   │   ├── expense_tracker.py
-│   │   ├── export_service.py
-│   │   ├── results.py
-│   │   └── settings_service.py
-│   │
-│   ├── repositories/
-│   │   ├── __init__.py
-│   │   ├── contracts.py
-│   │   └── exceptions.py
-│   │
-│   ├── storage/
-│   │   ├── __init__.py
-│   │   ├── exceptions.py
-│   │   └── json_storage.py
-│   │
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── formatters.py
-│   │   └── validators.py
-│   │
-│   ├── application.py
-│   ├── config.py
-│   ├── exceptions.py
-│   ├── providers.py
-│   └── main.py
-│
-├── data/
-│   ├── budgets.json
-│   └── expenses.json
-│
-├── exports/
-│
-└── docs/
+|-- .github/workflows/tests.yml
+|-- docs/
+|-- src/
+|   |-- cli/
+|   |   |-- commands.py
+|   |   `-- menu.py
+|   |-- models/
+|   |   `-- expense.py
+|   |-- repositories/
+|   |   |-- contracts.py
+|   |   `-- exceptions.py
+|   |-- services/
+|   |   |-- budget_service.py
+|   |   |-- expense_tracker.py
+|   |   |-- export_service.py
+|   |   |-- results.py
+|   |   `-- settings_service.py
+|   |-- storage/
+|   |   |-- exceptions.py
+|   |   `-- json_storage.py
+|   |-- utils/
+|   |   |-- formatters.py
+|   |   `-- validators.py
+|   |-- application.py
+|   |-- config.py
+|   |-- exceptions.py
+|   |-- main.py
+|   `-- providers.py
+|-- tests/
+|-- data/                 # ignored runtime JSON and backups
+|-- exports/              # ignored generated CSV files
+|-- requirements.txt
+|-- requirements-dev.txt
+|-- pytest.ini
+|-- ruff.toml
+`-- README.md
 ```
 
-## Architecture Overview
+Package `__init__.py` files are omitted above for readability.
 
-The application is organized around a composition root and five primary
-layers.
+## Dependency ownership
+
+- `src/main.py` owns process-level startup and exit behavior.
+- `src/application.py` owns concrete construction and dependency injection.
+- `src/cli/` owns all terminal input and output.
+- `src/services/` owns use cases and application rules.
+- `src/models/` owns the `Expense` entity and its invariants.
+- `src/repositories/` owns persistence-neutral interfaces.
+- `src/storage/` owns the JSON adapter and file reliability.
+- `src/utils/` owns shared validation and presentation helpers.
+
+Dependencies point toward protocols and domain rules. Services do not import
+`JSONStorage`, and persistence does not print terminal messages.
+
+## Runtime object graph
 
 ```text
-Application Composition and Configuration
-      │
-      ▼
-CLI Layer
-      │
-      ▼
-Services Layer
-      │
-      ▼
-Repository Contracts ◄──── JSON Storage
-      │
-      ▼
-Models Layer
-
-Utilities
-(used by all layers)
+ApplicationConfig ----+
+SystemClock -----------+--> create_application()
+SystemUUIDGenerator ---+          |
+                                  +--> JSONStorage
+                                  +--> services
+                                  +--> CommandHandler
+                                  `--> Menu --> Application
 ```
 
-## Application Composition (`src/application.py`)
+The one `JSONStorage` instance structurally implements the expense, budget,
+and settings repository protocols. The application injects the same clock and
+UUID provider wherever deterministic runtime values are needed.
 
-`create_application()` is the only production factory for concrete runtime
-components. It constructs one configured JSON repository, injects it into the
-services, and injects the same clock and UUID provider into every component
-that needs them. The returned `Application` container owns the complete object
-graph. `src/main.py` remains a thin entry point.
+## Storage shape
 
-## Runtime Configuration (`src/config.py`)
+The repository persists three independent version 2 documents:
 
-`ApplicationConfig` centralizes data and export directories and the initial
-currency. The defaults are `data`, `exports`, and `USD`; each can be overridden
-through the documented `EXPENSE_TRACKER_*` environment variables. Persisted
-settings remain authoritative after initial setup.
+- `expenses.json`: expense collection with UUIDs and timestamps;
+- `budgets.json`: category-to-decimal-string budget mapping;
+- `settings.json`: one application currency.
 
-## Runtime Providers (`src/providers.py`)
+Each may have a `.bak` previous-version backup. The complete contract is in
+[docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md).
 
-The `Clock` and `UUIDGenerator` protocols isolate operating-system time and
-random UUID generation. Services, storage migration, export filenames, command
-defaults, and reports receive these providers through dependency injection.
-Only the system provider implementations call ambient time or UUID functions.
----
+## Test structure
 
-## CLI Layer (`src/cli`)
+Tests mirror the production boundaries:
 
-The CLI layer is responsible for all user interaction.
+- model and validator unit tests;
+- service unit tests using in-memory fakes;
+- reusable repository contract tests;
+- JSON storage failure and recovery tests;
+- CLI command, formatter, and menu tests;
+- composition, integration, and subprocess entry-point tests.
 
-Responsibilities:
+All test writes use temporary directories. See
+[docs/QUALITY_AUTOMATION.md](docs/QUALITY_AUTOMATION.md).
 
-- Display menus
-- Collect user input
-- Validate menu choices
-- Call service methods
-- Display formatted output
+## Intended evolution
 
-The CLI layer does not contain business logic or persistence logic.
-
-## Services Layer (`src/services`)
-
-The service layer contains the application's business logic.
-
-Services receive repository contracts through their constructors. They return
-domain objects or typed result values rather than terminal-formatted strings.
-
-### ExpenseTrackerService
-
-Responsible for:
-
-- Expense CRUD operations
-- Searching expenses
-- Filtering expenses
-- Sorting expenses
-- Monthly summaries
-- Expense statistics
-- Spending by category
-- Top spending categories
-- Duplicate expenses
-- Importing expenses from CSV
-
-### BudgetService
-
-Responsible for:
-
-- Setting budgets
-- Editing budgets
-- Deleting budgets
-- Budget status calculations
-
-### ExportService
-
-Responsible for:
-
-- Exporting expenses to CSV
-- Exporting summaries to CSV
-- Reading CSV files
-- Validating CSV structure
-
-## Models Layer (`src/models`)
-
-The model layer represents the application's data.
-
-Currently the application contains:
-
-### Expense
-
-The Expense model:
-
-- stores expense information
-- validates data during object creation
-- converts objects to dictionaries
-- recreates objects from stored JSON data
-
-This keeps validation close to the data model itself.
-
-## Repository Contracts (`src/repositories`)
-
-Repository protocols define the persistence operations required by expenses,
-budgets, and settings. Services depend on these protocols and remain unaware of
-JSON files. Reusable contract tests allow later database repositories to prove
-the same behavior.
-
-## Storage Layer (`src/storage`)
-
-The storage layer is responsible for persistence.
-
-Current implementation:
-
-- expenses.json
-- budgets.json
-- settings.json (application-wide currency, default USD)
-- atomic temporary-file replacement
-- previous-valid-document `.json.bak` backups
-- validated automatic recovery from corrupt or missing primary documents
-- explicit persistence exceptions mapped through the repository error contract
-
-`JSONStorage` implements the three repository protocols. JSON parsing, schema
-validation, backup naming, and atomic file operations remain confined to this
-layer.
-
-The storage layer isolates file operations from business logic, making future migration to a relational database straightforward.
-
-## Utilities (`src/utils`)
-
-Reusable helper functions shared across the application.
-
-### validators.py
-
-Provides:
-
-- date validation
-- amount validation
-- category validation
-- description validation
-- budget validation
-
-### formatters.py
-
-Responsible for formatting data displayed to the user, including:
-
-- expense tables
-- summaries
-- budget reports
-- statistics
-- spending reports
-
-## Data Flow
-
-The typical flow of an operation is:
-
-```text
-User
-    │
-    ▼
-Application Factory
-    │
-    ▼
-Menu
-    │
-    ▼
-Service
-    │
-    ▼
-Model
-    │
-    ▼
-Repository Contract
-    ▲
-    │
-JSON Storage
-```
-
-For example, when adding an expense:
-
-1. The user enters expense information.
-2. The CLI collects the input.
-3. The service validates and processes the request.
-4. An Expense object is created with the injected clock and UUID provider.
-5. The service saves through the expense repository contract.
-6. The injected JSON implementation persists the updated data.
-7. The CLI formats and displays the returned expense.
-
-## Key Features
-
-### Phase 1 Capabilities
-
-### Expense Management
-
-- ✅ Add Expense
-- ✅ View All Expenses
-- ✅ View Expense Details
-- ✅ Edit Expense
-- ✅ Delete Expense
-- ✅ Clear All Expenses
-- ✅ Search Expenses
-- ✅ Filter by Category
-- ✅ Filter by Date Range
-- ✅ Sort Expenses
-- ✅ Duplicate Expense
-
----
-
-### Budget Management
-
-- ✅ Set Budget
-- ✅ Edit Budget
-- ✅ View Budgets
-- ✅ Delete Budget
-- ✅ Clear Budgets
-- ✅ Budget Status
-
----
-
-### Reports
-
-- ✅ Monthly Summary
-- ✅ Expense Statistics
-- ✅ Spending by Category
-- ✅ Top Spending Categories
-
----
-
-### Import / Export
-
-- ✅ Export Expenses to CSV
-- ✅ Export Monthly Summary to CSV
-- ✅ Import Expenses from CSV
-- ✅ Duplicate Detection During Import
-
-### Data Validation
-- Date format validation (YYYY-MM-DD)
-- Amount validation (positive numbers)
-- Category validation (predefined list)
-- Description validation (non-empty)
-- Budget amount validation
-
-### Categories Supported
-- Food
-- Transport
-- Rent
-- Utilities
-- Entertainment
-- Healthcare
-- Shopping
-- Other
-
----
-
-## Setup and Execution
-
-### 1. Activate Virtual Environment
-```bash
-# Windows PowerShell
-.\.venv\Scripts\Activate
-
-# If activation is blocked:
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-.\.venv\Scripts\Activate
-```
-
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Run the Application
-```bash
-python -m src.main
-```
-
-Or directly:
-```bash
-python -m src.main
-```
-
-## Git Workflow
-
-### Initialize Repository
-```bash
-git init
-git config user.name "Your Name"
-git config user.email "you@example.com"
-git add .
-git commit -m "Initial commit: Professional project structure"
-```
-
-### Create Remote Repository
-```bash
-git remote add origin https://github.com/yourusername/expense-tracker.git
-git branch -M main
-git push -u origin main
-```
-
-### Branch Workflow
-```bash
-# Create feature branch
-git checkout -b feature/add-reports
-
-# Make changes and commit
-git add .
-git commit -m "Add reporting feature"
-
-# Push to remote
-git push origin feature/add-reports
-
-# Create Pull Request on GitHub
-# After review, merge to main
-```
-
----
-
-## Design Principles
-
-### 1. **Separation of Concerns**
-Each layer has a single responsibility:
-- Models: Data structures
-- Services: Business logic
-- Repositories: Persistence contracts
-- Storage: Persistence
-- CLI: User interaction
-- Utils: Reusable helpers
-
-### 2. **DRY (Don't Repeat Yourself)**
-- Common validation in `validators.py`
-- Common formatting in `formatters.py`
-- Reusable service classes
-
-### 3. **SOLID Principles**
-- **S**ingle Responsibility: Each class has one reason to change
-- **O**pen/Closed: Services open for extension, closed for modification
-- **L**iskov: Proper inheritance and composition
-- **I**nterface: Clear public APIs
-- **D**ependency: Low coupling between layers
-
-### 4. **Professional Code Quality**
-- Type hints in docstrings
-- Comprehensive docstrings
-- Clear error messages
-- Consistent naming conventions
-- Proper exception handling
-
----
-
-## Future Architecture
-
-This project is intentionally designed so that only the presentation and persistence layers change during future roadmap phases.
-
-Current:
-
-CLI → Services → Repository Contracts ← JSON Storage
-
-Future:
-
-Web API → Services → Repository Contracts ← Django ORM Adapter → PostgreSQL
-
-The service layer can be largely reused during the migration to Django REST Framework.
----
-
-## Best Practices Demonstrated
-
-✓ Clear module organization
-✓ Proper separation of concerns
-✓ Comprehensive documentation
-✓ Professional naming conventions
-✓ Reusable components
-✓ Input validation
-✓ Error handling
-✓ Data persistence
-✓ CLI user experience
-✓ Git workflow setup
-
----
-
-## Quick Commands Reference
-
-```bash
-# Virtual environment
-.\.venv\Scripts\Activate        # Activate venv
-deactivate                       # Deactivate venv
-
-# Git
-git status                       # Check status
-git add .                        # Stage all changes
-git commit -m "message"          # Commit changes
-git push origin main             # Push to remote
-git log --oneline               # View commit history
-
-# Application
-python -m src.main              # Run app
-pip freeze > requirements.txt   # Update requirements
-```
-
-## Code Quality Metrics
-
-- **Modularity**: 9/10 - Well-separated concerns
-- **Maintainability**: 9/10 - Clear structure
-- **Scalability**: 8/10 - Ready for expansion
-- **Documentation**: 9/10 - Comprehensive docstrings
-- **Testing manually**: 7/10 - Core tests included
-
----
-
-## Questions or Issues?
-
-For questions about this structure:
-1. Review the docstrings in each module
-2. Check `README.md` for usage
-3. Examine test files for examples
-4. Consult this documentation
-
----
-
-*Last Updated: 2026-08-05*
-*Project Version: 1.0.0*
+The current structure allows a later Django repository adapter to sit on the
+right side of the repository protocols. It does not imply that whole-collection
+load/save contracts are the final database interface. Before multi-user or
+high-volume operation, those contracts need deliberate granular and
+transactional evolution. See
+[docs/DJANGO_MIGRATION_READINESS.md](docs/DJANGO_MIGRATION_READINESS.md).

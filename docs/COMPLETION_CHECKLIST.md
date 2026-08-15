@@ -1,166 +1,51 @@
-# Phase 1 Completion Checklist
+# Phase 1 release completion checklist
 
-## Project
+This checklist belongs to Milestone 7. Earlier documents that called the whole
+phase complete before the release gate were inaccurate.
 
-Expense Tracker CLI
+## Clean installation
 
-## Status
+- [ ] Create a new virtual environment with a supported Python version.
+- [ ] Install `requirements-dev.txt` without relying on the existing `.venv`.
+- [ ] Run `python -m pip check` successfully.
+- [ ] Decide whether each production dependency is used; remove unused ones
+  only with a tested, documented change.
 
-**Overall Status:** ✅ Phase 1 Complete
+## Automated quality
 
-This document records the completion status of the Phase 1 Expense Tracker CLI project.
+- [ ] `python -m ruff check .`
+- [ ] `python -m ruff format --check .`
+- [ ] `python -m compileall -q src tests`
+- [ ] `python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85 -q`
+- [ ] GitHub Actions passes static quality and every supported Python version.
 
----
+## Acceptance and data safety
 
-# Expense Management
+- [ ] Exercise all current CLI menu branches using isolated runtime paths.
+- [ ] Verify version 2 files, exact rounding, UUIDs, occurrence dates, UTC
+  timestamps, and currency labels.
+- [ ] Verify CSV export and import, including currency mismatch rejection.
+- [ ] Verify original unversioned JSON migration on the next save.
+- [ ] Verify corrupt-primary recovery from a valid `.bak` file.
+- [ ] Verify invalid primary plus invalid backup fails visibly.
+- [ ] Confirm tests and manual checks did not alter real `data/` files.
 
-| Feature | Status |
-|----------|--------|
-| Add Expense | ✅ |
-| View All Expenses | ✅ |
-| View Expense Details | ✅ |
-| Edit Expense | ✅ |
-| Delete Expense | ✅ |
-| Clear All Expenses | ✅ |
-| Search Expenses | ✅ |
-| Filter by Category | ✅ |
-| Filter by Date Range | ✅ |
-| Sort Expenses | ✅ |
-| Duplicate Expense | ✅ |
+## Documentation and repository hygiene
 
----
+- [ ] Active documentation matches the current CLI, source structure, schema,
+  configuration, and quality workflow.
+- [ ] Local documentation links pass the documentation integrity test.
+- [ ] No active document claims a future framework or database is implemented.
+- [ ] Git contains no secrets, personal financial data, generated exports,
+  caches, coverage files, or manual temporary data.
+- [ ] Resolve or document outstanding branches and stashes.
 
-# Budget Management
+## Release
 
-| Feature | Status |
-|----------|--------|
-| Set Budget | ✅ |
-| Edit Budget | ✅ |
-| View Budgets | ✅ |
-| Delete Budget | ✅ |
-| Clear Budgets | ✅ |
-| Budget Status | ✅ |
-
----
-
-# Reports
-
-| Feature | Status |
-|----------|--------|
-| Monthly Summary | ✅ |
-| Expense Statistics | ✅ |
-| Spending by Category | ✅ |
-| Top Spending Categories | ✅ |
-
----
-
-# Import / Export
-
-| Feature | Status |
-|----------|--------|
-| Export Expenses to CSV | ✅ |
-| Export Monthly Summary | ✅ |
-| Import Expenses from CSV | ✅ |
-| CSV Validation | ✅ |
-| Duplicate Detection | ✅ |
-
----
-
-# Architecture
-
-| Component | Status |
-|----------|--------|
-| Layered Architecture | ✅ |
-| Service Layer | ✅ |
-| Model Layer | ✅ |
-| Storage Layer | ✅ |
-| Utilities Layer | ✅ |
-| CLI Separation | ✅ |
-
----
-
-# Data Persistence
-
-| Component | Status |
-|----------|--------|
-| JSON Storage | ✅ |
-| Expense Persistence | ✅ |
-| Budget Persistence | ✅ |
-
----
-
-# Validation
-
-| Validation | Status |
-|------------|--------|
-| Date Validation | ✅ |
-| Amount Validation | ✅ |
-| Category Validation | ✅ |
-| Description Validation | ✅ |
-| Budget Validation | ✅ |
-| CSV Structure Validation | ✅ |
-
----
-
-# Manual Verification
-
-The following workflows have been manually verified.
-
-| Workflow | Status |
-|----------|--------|
-| Expense CRUD | ✅ |
-| Budget Management | ✅ |
-| Reports | ✅ |
-| CSV Export | ✅ |
-| CSV Import | ✅ |
-| Duplicate Detection | ✅ |
-| Persistent Storage | ✅ |
-
----
-
-# Not Included in Phase 1
-
-The following features are intentionally outside the scope of this project.
-
-- User authentication
-- Multi-user support
-- SQL database integration
-- Django backend
-- REST API
-- Web frontend
-- Mobile application
-- AI-powered financial insights
-- Cloud deployment
-- Automated testing framework
-
----
-
-# Phase 1 Objectives
-
-| Objective | Status |
-|-----------|--------|
-| Learn Python Fundamentals | ✅ |
-| Apply Object-Oriented Programming | ✅ |
-| Build Modular Architecture | ✅ |
-| Separate Business Logic | ✅ |
-| Implement Persistent Storage | ✅ |
-| Build a Complete CLI Application | ✅ |
-| Prepare for Django Migration | ✅ |
-
----
-
-# Overall Assessment
-
-The Phase 1 Expense Tracker CLI project has successfully met its intended learning objectives.
-
-The application demonstrates:
-
-- Modular architecture
-- Object-oriented design
-- Separation of concerns
-- Persistent JSON storage
-- Input validation
-- CSV import/export
-- Business logic encapsulation
-
-The project is considered complete for Phase 1 and is ready to serve as the foundation for the next stage of the roadmap, which focuses on web technologies and Django REST Framework.
+- [ ] Merge the final Phase 1 pull request after review and CI.
+- [ ] Fast-forward local `main` to the merged commit.
+- [ ] Create and push the agreed stable Phase 1 version tag.
+- [ ] Publish a completion report containing the verified command results,
+  known limitations, and next-roadmap boundary.
+- [ ] Mark Milestone 7 complete in
+  [PHASE_1_UPGRADE_ROADMAP.md](PHASE_1_UPGRADE_ROADMAP.md).

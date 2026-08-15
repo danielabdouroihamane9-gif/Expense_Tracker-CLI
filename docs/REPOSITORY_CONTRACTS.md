@@ -16,9 +16,9 @@ Application services --> repository protocols <-- JSONStorage
 Domain model and validation
 ```
 
-The CLI receives fully constructed services. The current entry point performs
-that temporary construction. Milestone 4 will move it into a formal,
-configuration-aware composition root without changing service behavior.
+The CLI receives fully constructed services. The configuration-aware
+composition root in `src/application.py` constructs the concrete repository,
+services, commands, and menu without changing service behavior.
 
 ## Repository contracts
 
