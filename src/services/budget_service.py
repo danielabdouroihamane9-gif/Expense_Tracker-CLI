@@ -1,6 +1,7 @@
 """Budget management service."""
 
 from datetime import datetime
+from decimal import Decimal
 from src.storage import JSONStorage
 from src.utils import VALID_CATEGORIES, validate_budget_amount
 
@@ -15,6 +16,7 @@ class BudgetService:
             data_dir (str): Directory for storing data files
         """
         self.storage = JSONStorage(data_dir)
+        self.currency = self.storage.load_settings()["currency"]
         self.budgets = self.storage.load_budgets()
 
     def set_budget(self, category, amount):
@@ -22,7 +24,7 @@ class BudgetService:
 
         Args:
             category (str): Category name
-            amount (float): Budget amount
+            amount (str | int | float | Decimal): Budget amount
 
         Returns:
             str: Success or error message
@@ -35,7 +37,10 @@ class BudgetService:
             amount_float = validate_budget_amount(amount)
             self.budgets[category_lower] = amount_float
             self.storage.save_budgets(self.budgets)
-            return f"✓ Budget set for {category_lower}: ${amount_float:.2f}"
+            return (
+                f"✓ Budget set for {category_lower}: "
+                f"{self.currency} {amount_float:.2f}"
+            )
         except ValueError as e:
             return f"✗ {e}"
 
@@ -77,7 +82,7 @@ class BudgetService:
         status = {}
 
         for category in VALID_CATEGORIES:
-            spent = monthly_summary.get(category, 0.0)
+            spent = monthly_summary.get(category, Decimal("0.00"))
             budget = self.budgets.get(category)
 
             if budget is None:

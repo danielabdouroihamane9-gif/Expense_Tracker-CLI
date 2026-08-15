@@ -3,12 +3,13 @@
 import csv
 from datetime import datetime
 from pathlib import Path
+from src.utils import validate_currency
 
 
 class ExportService:
     """Handles exporting expenses and summaries to CSV."""
 
-    def __init__(self, export_dir="exports"):
+    def __init__(self, export_dir="exports", currency="USD"):
         """Initialize export service.
 
         Args:
@@ -16,6 +17,7 @@ class ExportService:
         """
         self.export_dir = Path(export_dir)
         self.export_dir.mkdir(exist_ok=True)
+        self.currency = validate_currency(currency)
 
     def export_expenses_to_csv(self, expenses, filename=None, category=None):
         """Export expenses to CSV file.
@@ -38,19 +40,28 @@ class ExportService:
             if not expenses:
                 return "✗ No expenses to export"
 
+            if any(expense.currency != self.currency for expense in expenses):
+                return (
+                    "Cannot export expenses that do not match "
+                    f"application currency {self.currency}"
+                )
+
             # Reverse to show oldest first in CSV
             expenses = list(reversed(expenses))
 
             filepath = self.export_dir / filename
             with open(filepath, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["Date", "Amount", "Category", "Description"])
+                writer.writerow(
+                    ["Date", "Amount", "Currency", "Category", "Description"]
+                )
 
                 for expense in expenses:
                     writer.writerow(
                         [
                             expense.date,
                             expense.amount,
+                            expense.currency,
                             expense.category,
                             expense.description,
                         ]
@@ -85,15 +96,15 @@ class ExportService:
             filepath = self.export_dir / filename
             with open(filepath, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["Category", "Amount"])
+                writer.writerow(["Category", "Amount", "Currency"])
 
                 total = 0
                 for category in sorted(summary.keys()):
                     amount = summary[category]
-                    writer.writerow([category.capitalize(), amount])
+                    writer.writerow([category.capitalize(), amount, self.currency])
                     total += amount
 
-                writer.writerow(["Total", total])
+                writer.writerow(["Total", total, self.currency])
 
             return f"✓ Exported summary to {filename}"
         except IOError as e:
@@ -184,6 +195,11 @@ class ExportService:
                     normalized_row = {
                         "Date": row[normalized_headers["date"]],
                         "Amount": row[normalized_headers["amount"]],
+                        "Currency": (
+                            row[normalized_headers["currency"]]
+                            if "currency" in normalized_headers
+                            else self.currency
+                        ),
                         "Category": row[normalized_headers["category"]],
                         "Description": row[normalized_headers["description"]],
                     }

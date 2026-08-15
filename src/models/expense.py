@@ -1,54 +1,118 @@
-"""Expense model with validation."""
+"""Expense domain model with validation and stable identity."""
+
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
 from src.utils.validators import (
     validate_date,
     validate_amount,
     validate_category,
     validate_description,
+    validate_currency,
 )
 
 
 class Expense:
     """Represents a single expense with validation."""
 
-    def __init__(self, date, amount, category, description):
+    def __init__(
+        self,
+        date,
+        amount,
+        category,
+        description,
+        *,
+        expense_id=None,
+        currency="USD",
+        created_at=None,
+    ):
         """Initialize an expense with validation.
 
         Args:
             date (str): Date in YYYY-MM-DD format
-            amount (float): Expense amount
+            amount (str | int | float | Decimal): Positive monetary amount
             category (str): Expense category
             description (str): Expense description
         """
-        self.date = validate_date(date)
+        self.id = self._validate_id(expense_id)
+        self.occurred_on = validate_date(date)
         self.amount = validate_amount(amount)
+        self.currency = validate_currency(currency)
         self.category = validate_category(category)
         self.description = validate_description(description)
+        self.created_at = self._validate_created_at(created_at)
+
+    @staticmethod
+    def _validate_id(expense_id):
+        if expense_id is None:
+            return uuid4()
+        try:
+            return expense_id if isinstance(expense_id, UUID) else UUID(str(expense_id))
+        except (TypeError, ValueError, AttributeError) as error:
+            raise ValueError(f"Invalid expense ID: {expense_id}") from error
+
+    @staticmethod
+    def _validate_created_at(created_at):
+        if created_at is None:
+            return datetime.now(timezone.utc)
+        if isinstance(created_at, str):
+            value = created_at.replace("Z", "+00:00")
+            try:
+                created_at = datetime.fromisoformat(value)
+            except ValueError as error:
+                raise ValueError(f"Invalid creation timestamp: {created_at}") from error
+        if not isinstance(created_at, datetime):
+            raise ValueError("Invalid creation timestamp")
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        return created_at.astimezone(timezone.utc)
+
+    @property
+    def date(self):
+        """Backward-compatible alias for the expense occurrence date."""
+        return self.occurred_on
 
     def to_dict(self):
         """Convert expense to dictionary for JSON serialization."""
         return {
-            "date": str(self.date),
-            "amount": self.amount,
+            "id": str(self.id),
+            "amount": format(self.amount, ".2f"),
+            "currency": self.currency,
             "category": self.category,
             "description": self.description,
+            "occurred_on": str(self.occurred_on),
+            "created_at": self.created_at.isoformat().replace("+00:00", "Z"),
         }
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data, default_currency="USD"):
         """Create Expense from dictionary (for JSON deserialization)."""
-        return cls(data["date"], data["amount"], data["category"], data["description"])
+        return cls(
+            data.get("occurred_on", data.get("date")),
+            data["amount"],
+            data["category"],
+            data["description"],
+            expense_id=data.get("id"),
+            currency=data.get("currency", default_currency),
+            created_at=data.get("created_at"),
+        )
 
     def __repr__(self):
-        return f"Expense({self.date}, ${self.amount:.2f}, {self.category}, {self.description})"
+        return (
+            f"Expense({self.occurred_on}, {self.currency} {self.amount:.2f}, "
+            f"{self.category}, {self.description})"
+        )
 
     def __eq__(self, other):
         """Check equality based on all attributes."""
         if not isinstance(other, Expense):
             return False
         return (
-            self.date == other.date
+            self.id == other.id
+            and self.occurred_on == other.occurred_on
             and self.amount == other.amount
+            and self.currency == other.currency
             and self.category == other.category
             and self.description == other.description
+            and self.created_at == other.created_at
         )

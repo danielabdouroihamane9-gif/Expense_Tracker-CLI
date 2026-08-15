@@ -1,7 +1,12 @@
 """Command handlers for CLI."""
 
 from datetime import datetime
-from src.utils import VALID_CATEGORIES
+from src.utils import (
+    VALID_CATEGORIES,
+    validate_amount,
+    validate_budget_amount,
+    validate_currency,
+)
 
 
 class CommandHandler:
@@ -29,20 +34,16 @@ class CommandHandler:
                 print("✗ Invalid format. Please use YYYY-MM-DD")
 
     @staticmethod
-    def get_user_amount():
+    def get_user_amount(currency="USD"):
         """Get and validate amount input from user.
 
         Returns:
             str: Valid amount as string
         """
         while True:
-            amount_input = input("Enter amount ($): ").strip()
+            amount_input = input(f"Enter amount ({currency}): ").strip()
             try:
-                amount = float(amount_input)
-                if amount <= 0:
-                    print("✗ Amount must be greater than 0")
-                    continue
-                return str(amount)
+                return format(validate_amount(amount_input), ".2f")
             except ValueError:
                 print("✗ Invalid amount. Enter a number.")
 
@@ -77,22 +78,28 @@ class CommandHandler:
             print("✗ Description cannot be empty")
 
     @staticmethod
-    def get_budget_amount():
+    def get_budget_amount(currency="USD"):
         """Get and validate budget amount from user.
 
         Returns:
             str: Valid budget amount as string
         """
         while True:
-            amount_input = input("Enter budget amount ($): ").strip()
+            amount_input = input(f"Enter budget amount ({currency}): ").strip()
             try:
-                amount = float(amount_input)
-                if amount <= 0:
-                    print("✗ Budget must be greater than 0")
-                    continue
-                return str(amount)
+                return format(validate_budget_amount(amount_input), ".2f")
             except ValueError:
                 print("✗ Invalid amount. Enter a number.")
+
+    @staticmethod
+    def get_user_currency():
+        """Get a validated three-letter currency code."""
+        while True:
+            currency = input("Enter currency code (for example USD or KMF): ")
+            try:
+                return validate_currency(currency)
+            except ValueError as error:
+                print(f"Invalid currency: {error}")
 
     @staticmethod
     def get_export_filename():

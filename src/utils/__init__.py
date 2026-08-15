@@ -7,6 +7,7 @@ from .validators import (
     validate_date,
     validate_description,
     validate_budget_amount,
+    validate_currency,
 )
 from .formatters import (
     format_currency,
@@ -31,6 +32,7 @@ __all__ = [
     "validate_date",
     "validate_description",
     "validate_budget_amount",
+    "validate_currency",
     "format_currency",
     "format_date",
     "display_expenses_table",
