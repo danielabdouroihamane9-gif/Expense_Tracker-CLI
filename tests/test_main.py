@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import src.main as application
+from src.storage import DataCorruptionError
 
 
 def test_main_runs_menu(monkeypatch):
@@ -21,3 +22,19 @@ def test_main_converts_failures_to_exit_codes(monkeypatch, capsys, error, code, 
         application.main()
     assert caught.value.code == code
     assert message in capsys.readouterr().out
+
+
+def test_main_reports_startup_persistence_failure(monkeypatch, capsys):
+    monkeypatch.setattr(
+        application,
+        "Menu",
+        MagicMock(side_effect=DataCorruptionError("damaged expenses")),
+    )
+
+    with pytest.raises(SystemExit) as caught:
+        application.main()
+
+    assert caught.value.code == 1
+    output = capsys.readouterr().out
+    assert "could not access its data safely" in output
+    assert ".bak backups" in output

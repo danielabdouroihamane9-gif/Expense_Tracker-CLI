@@ -70,7 +70,25 @@ Missing IDs and creation timestamps are generated in memory. A missing
 currency receives the configured application currency.
 The next successful save upgrades the file to version 2.
 
+Versioned documents must declare integer `schema_version: 2` and contain the
+correct collection type. All records are validated before any are accepted.
+Schema versions greater than 2 are rejected explicitly so an older application
+cannot overwrite data created by a newer version.
+
 CSV imports keep the original four required columns (`Date`, `Amount`,
 `Category`, `Description`). `Currency` is optional and defaults to the current
 application currency. A row declaring another currency is rejected. New
 expense and summary exports include the currency explicitly.
+
+## Persistence and backups
+
+Primary documents are written through a flushed temporary file and atomic
+replacement. Before an existing valid document is overwritten, its previous
+contents are saved as `expenses.json.bak`, `budgets.json.bak`, or
+`settings.json.bak`.
+
+Corrupt or missing primary data is restored automatically only when its backup
+passes the same schema and domain validation. Serious read, validation, and
+recovery failures are raised explicitly rather than treated as empty data. See
+[`PERSISTENCE_RELIABILITY.md`](PERSISTENCE_RELIABILITY.md) for guarantees and
+manual recovery instructions.
