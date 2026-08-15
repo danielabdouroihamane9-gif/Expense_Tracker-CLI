@@ -35,13 +35,18 @@ def set_inputs(monkeypatch, *values):
 @pytest.mark.parametrize(
     "method, choice, target",
     [
-        ("run", "1", "_expense_menu"), ("run", "2", "_budget_menu"),
-        ("run", "3", "_reports_menu"), ("run", "4", "_export_menu"),
+        ("run", "1", "_expense_menu"),
+        ("run", "2", "_budget_menu"),
+        ("run", "3", "_reports_menu"),
+        ("run", "4", "_export_menu"),
         ("run", "5", "_settings_menu"),
-        ("_expense_menu", "1", "_manage_expenses_menu"), ("_expense_menu", "2", "_search_filter_menu"),
+        ("_expense_menu", "1", "_manage_expenses_menu"),
+        ("_expense_menu", "2", "_search_filter_menu"),
         ("_expense_menu", "3", "_sort_expenses"),
-        ("_reports_menu", "1", "_expense_reports_menu"), ("_reports_menu", "2", "_budget_reports_menu"),
-        ("_export_menu", "1", "_export_data_menu"), ("_export_menu", "2", "_import_data_menu"),
+        ("_reports_menu", "1", "_expense_reports_menu"),
+        ("_reports_menu", "2", "_budget_reports_menu"),
+        ("_export_menu", "1", "_export_data_menu"),
+        ("_export_menu", "2", "_import_data_menu"),
     ],
 )
 def test_menu_routes_to_selected_submenu(menu, monkeypatch, method, choice, target):
@@ -87,19 +92,28 @@ def test_main_menu_reports_application_error_and_keeps_running(
 @pytest.mark.parametrize(
     "method, choice, target",
     [
-        ("_manage_expenses_menu", "1", "_add_expense"), ("_manage_expenses_menu", "2", "_edit_expense"),
-        ("_manage_expenses_menu", "3", "_duplicate_expense"), ("_manage_expenses_menu", "4", "_view_all_expenses"),
-        ("_manage_expenses_menu", "5", "_view_expense_details"), ("_manage_expenses_menu", "6", "_delete_expense"),
+        ("_manage_expenses_menu", "1", "_add_expense"),
+        ("_manage_expenses_menu", "2", "_edit_expense"),
+        ("_manage_expenses_menu", "3", "_duplicate_expense"),
+        ("_manage_expenses_menu", "4", "_view_all_expenses"),
+        ("_manage_expenses_menu", "5", "_view_expense_details"),
+        ("_manage_expenses_menu", "6", "_delete_expense"),
         ("_manage_expenses_menu", "7", "_clear_all_expenses"),
-        ("_search_filter_menu", "1", "_search_expenses"), ("_search_filter_menu", "2", "_filter_by_category"),
+        ("_search_filter_menu", "1", "_search_expenses"),
+        ("_search_filter_menu", "2", "_filter_by_category"),
         ("_search_filter_menu", "3", "_filter_by_date"),
-        ("_budget_menu", "1", "_set_budget"), ("_budget_menu", "2", "_edit_budget"),
-        ("_budget_menu", "3", "_view_all_budgets"), ("_budget_menu", "4", "_delete_budget"),
+        ("_budget_menu", "1", "_set_budget"),
+        ("_budget_menu", "2", "_edit_budget"),
+        ("_budget_menu", "3", "_view_all_budgets"),
+        ("_budget_menu", "4", "_delete_budget"),
         ("_budget_menu", "5", "_clear_all_budgets"),
-        ("_expense_reports_menu", "1", "_monthly_summary"), ("_expense_reports_menu", "2", "_expense_statistics"),
-        ("_expense_reports_menu", "3", "_spending_by_category"), ("_expense_reports_menu", "4", "_top_spending_categories"),
+        ("_expense_reports_menu", "1", "_monthly_summary"),
+        ("_expense_reports_menu", "2", "_expense_statistics"),
+        ("_expense_reports_menu", "3", "_spending_by_category"),
+        ("_expense_reports_menu", "4", "_top_spending_categories"),
         ("_budget_reports_menu", "1", "_view_budget_status"),
-        ("_export_data_menu", "1", "_export_expenses"), ("_export_data_menu", "2", "_export_summary"),
+        ("_export_data_menu", "1", "_export_expenses"),
+        ("_export_data_menu", "2", "_export_summary"),
         ("_import_data_menu", "1", "_import_expenses"),
     ],
 )
@@ -111,7 +125,23 @@ def test_submenu_routes_to_selected_action(menu, monkeypatch, method, choice, ta
     action.assert_called_once_with()
 
 
-@pytest.mark.parametrize("method", ["run", "_settings_menu", "_expense_menu", "_manage_expenses_menu", "_search_filter_menu", "_budget_menu", "_reports_menu", "_expense_reports_menu", "_budget_reports_menu", "_export_menu", "_export_data_menu", "_import_data_menu"])
+@pytest.mark.parametrize(
+    "method",
+    [
+        "run",
+        "_settings_menu",
+        "_expense_menu",
+        "_manage_expenses_menu",
+        "_search_filter_menu",
+        "_budget_menu",
+        "_reports_menu",
+        "_expense_reports_menu",
+        "_budget_reports_menu",
+        "_export_menu",
+        "_export_data_menu",
+        "_import_data_menu",
+    ],
+)
 def test_menus_reject_invalid_choice_then_allow_back(menu, monkeypatch, capsys, method):
     set_inputs(monkeypatch, "invalid", "0")
     getattr(menu, method)()
@@ -128,7 +158,9 @@ def test_add_expense_collects_inputs_and_calls_service(menu, capsys):
     )
     menu._add_expense()
     menu.commands.get_user_amount.assert_called_once_with("USD")
-    menu.expense_service.add_expense.assert_called_once_with("2025-01-01", "12", "food", "Lunch")
+    menu.expense_service.add_expense.assert_called_once_with(
+        "2025-01-01", "12", "food", "Lunch"
+    )
     assert "Expense added" in capsys.readouterr().out
 
 
@@ -160,7 +192,9 @@ def test_select_expense_retries_and_returns_selection(menu, monkeypatch, capsys)
 def test_select_expense_handles_empty_and_cancel(menu, monkeypatch):
     menu.expense_service.get_all_expenses.return_value = []
     assert menu._select_expense() is None
-    menu.expense_service.get_all_expenses.return_value = [make_expense("2025-01-01", 1, "food", "x")]
+    menu.expense_service.get_all_expenses.return_value = [
+        make_expense("2025-01-01", 1, "food", "x")
+    ]
     set_inputs(monkeypatch, "0")
     assert menu._select_expense() is None
 
@@ -197,7 +231,9 @@ def test_select_budget_retries_and_delete_confirms(menu, monkeypatch):
     menu.budget_service.delete_budget.assert_called_once_with("food")
 
 
-def test_edit_expense_handles_invalid_amount_without_crashing(menu, monkeypatch, capsys):
+def test_edit_expense_handles_invalid_amount_without_crashing(
+    menu, monkeypatch, capsys
+):
     expense = make_expense("2025-01-01", 1, "food", "x")
     menu._select_expense = MagicMock(return_value=expense)
     set_inputs(monkeypatch, "not-a-number", "", "")
@@ -208,7 +244,10 @@ def test_edit_expense_handles_invalid_amount_without_crashing(menu, monkeypatch,
 
 def test_filter_search_and_reports_delegate(menu, monkeypatch):
     expense = make_expense("2025-01-01", 5, "food", "Lunch")
-    menu.commands.get_user_date_range.return_value = (date(2025, 1, 1), date(2025, 1, 31))
+    menu.commands.get_user_date_range.return_value = (
+        date(2025, 1, 1),
+        date(2025, 1, 31),
+    )
     menu.expense_service.get_by_date_range.return_value = [expense]
     menu._filter_by_date()
     menu.commands.get_user_keyword.return_value = "lunch"
@@ -217,9 +256,13 @@ def test_filter_search_and_reports_delegate(menu, monkeypatch):
     menu.expense_service.get_spending_by_category.return_value = {"food": 5.0}
     menu.expense_service.get_top_spending_categories.return_value = [("food", 5.0)]
     menu.expense_service.get_expense_statistics.return_value = {
-        "count": 1, "total": 5.0, "average": 5.0,
-        "highest": expense, "lowest": expense,
-        "highest_index": 1, "lowest_index": 1,
+        "count": 1,
+        "total": 5.0,
+        "average": 5.0,
+        "highest": expense,
+        "lowest": expense,
+        "highest_index": 1,
+        "lowest_index": 1,
     }
     menu._spending_by_category()
     menu._top_spending_categories()
@@ -236,10 +279,19 @@ def test_export_and_import_orchestration(menu):
         Path("out.csv"), 1, "expenses"
     )
     menu._export_expenses()
-    menu.export_service.export_expenses_to_csv.assert_called_once_with([expense], "out.csv")
+    menu.export_service.export_expenses_to_csv.assert_called_once_with(
+        [expense], "out.csv"
+    )
 
     menu.commands.get_csv_file_path.return_value = "in.csv"
-    rows = [{"Date": "2025-01-01", "Amount": "5", "Category": "food", "Description": "Lunch"}]
+    rows = [
+        {
+            "Date": "2025-01-01",
+            "Amount": "5",
+            "Category": "food",
+            "Description": "Lunch",
+        }
+    ]
     menu.export_service.read_expenses_csv.return_value = rows
     menu.expense_service.import_expenses.return_value = ExpenseImportResult(
         imported=1, skipped_duplicates=0, errors=()

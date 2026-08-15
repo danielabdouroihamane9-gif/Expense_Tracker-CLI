@@ -1,7 +1,8 @@
 """Persistence-agnostic repository protocols."""
 
+from collections.abc import Mapping, Sequence
 from decimal import Decimal
-from typing import Mapping, Protocol, Sequence, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from src.models import Expense
 

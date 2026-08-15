@@ -2,6 +2,7 @@
 """Main entry point for Expense Tracker CLI application."""
 
 import sys
+
 from src.application import create_application
 from src.exceptions import ExpenseTrackerError
 from src.storage import PersistenceError

@@ -3,7 +3,12 @@
 import csv
 from pathlib import Path
 
-from src.exceptions import CSVImportError, CurrencyMismatchError, ExportError, NoDataError
+from src.exceptions import (
+    CSVImportError,
+    CurrencyMismatchError,
+    ExportError,
+    NoDataError,
+)
 from src.providers import Clock
 from src.utils import validate_currency
 
@@ -80,7 +85,9 @@ class ExportService:
                     )
 
         except (OSError, csv.Error) as error:
-            raise ExportError(f"Cannot export expenses to '{filepath}': {error}") from error
+            raise ExportError(
+                f"Cannot export expenses to '{filepath}': {error}"
+            ) from error
         return ExportResult(filepath, len(expenses), "expenses")
 
     def export_summary_to_csv(self, summary, filename=None, year=None, month=None):
@@ -119,7 +126,9 @@ class ExportService:
                 writer.writerow(["Total", total, self.currency])
 
         except (OSError, csv.Error) as error:
-            raise ExportError(f"Cannot export summary to '{filepath}': {error}") from error
+            raise ExportError(
+                f"Cannot export summary to '{filepath}': {error}"
+            ) from error
         return ExportResult(filepath, len(summary), "summary")
 
     def read_expenses_csv(self, file_path):
@@ -162,8 +171,7 @@ class ExportService:
 
                 # Normalize CSV headers
                 normalized_headers = {
-                    header.strip().lower(): header
-                    for header in reader.fieldnames
+                    header.strip().lower(): header for header in reader.fieldnames
                 }
 
                 expected_headers = {
@@ -173,10 +181,7 @@ class ExportService:
                     "description",
                 }
 
-                missing_columns = (
-                    expected_headers
-                    - set(normalized_headers.keys())
-                )
+                missing_columns = expected_headers - set(normalized_headers.keys())
 
                 if missing_columns:
                     raise CSVImportError(
@@ -208,4 +213,6 @@ class ExportService:
         except CSVImportError:
             raise
         except (OSError, UnicodeError, csv.Error) as error:
-            raise CSVImportError(f"Cannot read CSV file '{filepath}': {error}") from error
+            raise CSVImportError(
+                f"Cannot read CSV file '{filepath}': {error}"
+            ) from error

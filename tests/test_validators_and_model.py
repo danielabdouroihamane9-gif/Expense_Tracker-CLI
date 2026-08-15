@@ -10,17 +10,29 @@ from src.utils.validators import (
     validate_amount,
     validate_budget_amount,
     validate_category,
+    validate_currency,
     validate_date,
     validate_description,
-    validate_currency,
 )
 
 
 def test_valid_categories_are_stable():
-    assert {"food", "transport", "rent", "utilities", "entertainment", "healthcare", "shopping", "other"} == VALID_CATEGORIES
+    assert {
+        "food",
+        "transport",
+        "rent",
+        "utilities",
+        "entertainment",
+        "healthcare",
+        "shopping",
+        "other",
+    } == VALID_CATEGORIES
 
 
-@pytest.mark.parametrize("value, expected", [("10", Decimal("10.00")), (19.999, Decimal("20.00")), ("0.005", Decimal("0.01"))])
+@pytest.mark.parametrize(
+    "value, expected",
+    [("10", Decimal("10.00")), (19.999, Decimal("20.00")), ("0.005", Decimal("0.01"))],
+)
 def test_validate_amount_accepts_and_rounds_positive_numbers(value, expected):
     assert validate_amount(value) == expected
 
@@ -53,17 +65,24 @@ def test_invalid_category_and_blank_description_are_rejected():
 
 def test_expense_round_trip_equality_and_repr():
     expense = Expense(
-        "2025-05-28", "12.345", " FOOD ", " Lunch ",
+        "2025-05-28",
+        "12.345",
+        " FOOD ",
+        " Lunch ",
         expense_id="12345678-1234-5678-1234-567812345678",
-        currency="usd", created_at="2025-05-28T10:00:00Z",
+        currency="usd",
+        created_at="2025-05-28T10:00:00Z",
     )
     restored = Expense.from_dict(expense.to_dict(), default_currency="USD")
 
     assert restored == expense
     assert expense.to_dict() == {
         "id": "12345678-1234-5678-1234-567812345678",
-        "amount": "12.35", "currency": "USD", "category": "food",
-        "description": "Lunch", "occurred_on": "2025-05-28",
+        "amount": "12.35",
+        "currency": "USD",
+        "category": "food",
+        "description": "Lunch",
+        "occurred_on": "2025-05-28",
         "created_at": "2025-05-28T10:00:00Z",
     }
     assert "Expense(2025-05-28, USD 12.35, food, Lunch)" == repr(expense)

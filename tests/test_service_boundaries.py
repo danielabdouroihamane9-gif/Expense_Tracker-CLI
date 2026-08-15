@@ -25,7 +25,7 @@ def test_services_operate_with_a_non_json_repository():
     settings = SettingsService(repository, repository, repository)
 
     expense = tracker.add_expense("2025-01-01", "12.50", "food", "Lunch")
-    budget = budgets.set_budget("food", "100")
+    budgets.set_budget("food", "100")
 
     assert repository.expenses == [expense]
     assert repository.budgets == {"food": Decimal("100.00")}

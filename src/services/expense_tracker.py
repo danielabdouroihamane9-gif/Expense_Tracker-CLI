@@ -197,7 +197,6 @@ class ExpenseTrackerService:
         spending = {}
 
         for expense in expenses:
-
             category = expense.category
 
             if category not in spending:
@@ -229,9 +228,7 @@ class ExpenseTrackerService:
             return []
 
         ranked_categories = sorted(
-            spending.items(),
-            key=lambda item: item[1],
-            reverse=True
+            spending.items(), key=lambda item: item[1], reverse=True
         )
 
         return ranked_categories[:limit]
@@ -262,19 +259,11 @@ class ExpenseTrackerService:
                 "average": Decimal("0.00"),
             }
 
-        total = sum(
-            (expense.amount for expense in expenses), Decimal("0.00")
-        )
+        total = sum((expense.amount for expense in expenses), Decimal("0.00"))
 
-        highest = max(
-            expenses,
-            key=lambda expense: expense.amount
-        )
+        highest = max(expenses, key=lambda expense: expense.amount)
 
-        lowest = min(
-            expenses,
-            key=lambda expense: expense.amount
-        )
+        lowest = min(expenses, key=lambda expense: expense.amount)
 
         highest_index = expenses.index(highest) + 1
         lowest_index = expenses.index(lowest) + 1
@@ -336,13 +325,7 @@ class ExpenseTrackerService:
             raise
         return True
 
-    def update_expense(
-            self,
-            expense,
-            amount,
-            category,
-            description
-    ):
+    def update_expense(self, expense, amount, category, description):
         """
         Update an existing expense.
         """
@@ -398,7 +381,6 @@ class ExpenseTrackerService:
         filtered = []
 
         for expense in expenses:
-
             if start_date <= expense.date <= end_date:
                 filtered.append(expense)
 

@@ -5,19 +5,32 @@ import pytest
 from src.models import Expense
 from src.services import ExpenseImportError, ExpenseImportResult
 from src.utils.formatters import (
-    display_budget_edit_preview, display_budget_status, display_budgets,
-    display_duplicate_expenses, display_expense_details, display_expense_statistics,
-    display_expenses_table, display_import_summary, display_spending_by_category,
-    display_summary, display_top_spending_categories, format_currency, format_date,
+    display_budget_edit_preview,
+    display_budget_status,
+    display_budgets,
+    display_duplicate_expenses,
+    display_expense_details,
+    display_expense_statistics,
+    display_expenses_table,
+    display_import_summary,
+    display_spending_by_category,
+    display_summary,
+    display_top_spending_categories,
+    format_currency,
+    format_date,
 )
 
 
 @pytest.fixture
 def expense():
     return Expense(
-        "2025-01-02", 12.5, "food", "Lunch",
+        "2025-01-02",
+        12.5,
+        "food",
+        "Lunch",
         expense_id="12345678-1234-5678-1234-567812345678",
-        currency="USD", created_at="2025-01-02T10:30:00Z",
+        currency="USD",
+        created_at="2025-01-02T10:30:00Z",
     )
 
 
@@ -60,30 +73,58 @@ def test_budget_displays(capsys):
     assert "No budgets" in capsys.readouterr().out
     display_budgets({"food": 100})
     display_budget_edit_preview("food", 100)
-    display_budget_status({"food": {"spent": 80, "budget": 100, "remaining": 20, "percentage": 80, "warning": True, "over_budget": False, "limit": False}})
+    display_budget_status(
+        {
+            "food": {
+                "spent": 80,
+                "budget": 100,
+                "remaining": 20,
+                "percentage": 80,
+                "warning": True,
+                "over_budget": False,
+                "limit": False,
+            }
+        }
+    )
     output = capsys.readouterr().out
     assert "Food" in output and "USD 100.00" in output and "80.00" in output
 
 
 def test_statistics_empty_and_populated(expense, capsys):
-    display_expense_statistics({"count": 0, "total": 0, "highest": None, "lowest": None, "average": 0})
+    display_expense_statistics(
+        {"count": 0, "total": 0, "highest": None, "lowest": None, "average": 0}
+    )
     assert "No expenses" in capsys.readouterr().out
-    display_expense_statistics({"count": 1, "total": 12.5, "average": 12.5, "highest": expense, "lowest": expense, "highest_index": 1, "lowest_index": 1})
+    display_expense_statistics(
+        {
+            "count": 1,
+            "total": 12.5,
+            "average": 12.5,
+            "highest": expense,
+            "lowest": expense,
+            "highest_index": 1,
+            "lowest_index": 1,
+        }
+    )
     assert "Number of Expenses" in capsys.readouterr().out
 
 
 def test_import_summary_includes_errors(capsys):
-    display_import_summary(ExpenseImportResult(
-        imported=1,
-        skipped_duplicates=2,
-        errors=(ExpenseImportError(
-            row_number=4,
-            date="bad",
-            amount="1",
-            category="food",
-            description="Invalid",
-            reason="failed",
-        ),),
-    ))
+    display_import_summary(
+        ExpenseImportResult(
+            imported=1,
+            skipped_duplicates=2,
+            errors=(
+                ExpenseImportError(
+                    row_number=4,
+                    date="bad",
+                    amount="1",
+                    category="food",
+                    description="Invalid",
+                    reason="failed",
+                ),
+            ),
+        )
+    )
     output = capsys.readouterr().out
     assert "Imported Successfully" in output and "Row 4" in output

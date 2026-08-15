@@ -2,7 +2,7 @@
 
 A professional, modular expense tracking application built with Python, demonstrating clean architecture principles and best practices for scalable software design.
 
-**Status:** Phase 1 stabilization in progress — Milestones 1–4 implemented
+**Status:** Phase 1 stabilization in progress — Milestones 1–5 implemented
 
 This project represents the foundation of a Python Full-Stack + AI Backend Development learning journey. It showcases a professional separation of concerns architecture designed to scale seamlessly into Phase 2 (API layer), Phase 3 (Database integration), and beyond.
 
@@ -194,6 +194,8 @@ File I/O is abstracted in a storage layer, making it easy to replace JSON with a
 ```bash
 python --version
 ```
+
+Supported versions are Python 3.11 through 3.14.
 
 ### 3. Create Virtual Environment
 ```bash

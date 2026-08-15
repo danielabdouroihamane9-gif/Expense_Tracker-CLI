@@ -1,14 +1,13 @@
 """Deterministic test doubles for repository and runtime boundaries."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from itertools import count
 from uuid import UUID
 
 from src.models import Expense
 from src.storage import JSONStorage
 
-
-TEST_NOW = datetime(2025, 6, 16, 12, 30, tzinfo=timezone.utc)
+TEST_NOW = datetime(2025, 6, 16, 12, 30, tzinfo=UTC)
 
 
 class FixedClock:

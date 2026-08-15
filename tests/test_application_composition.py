@@ -7,14 +7,14 @@ import pytest
 
 from src.application import create_application
 from src.config import (
-    ApplicationConfig,
     DATA_DIR_ENV,
     DEFAULT_CURRENCY_ENV,
     EXPORT_DIR_ENV,
+    ApplicationConfig,
 )
 from src.exceptions import DomainValidationError
 from src.providers import Clock, UUIDGenerator
-from tests.fakes import FixedClock, SequentialUUIDGenerator, TEST_NOW
+from tests.fakes import TEST_NOW, FixedClock, SequentialUUIDGenerator
 
 
 def test_environment_configuration_resolves_paths_and_currency(tmp_path):
