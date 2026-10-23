@@ -234,3 +234,21 @@ class UserSettingsAPITests(APITestCase):
 
         self.settings.refresh_from_db()
         self.assertEqual(self.settings.currency, "USD")
+
+    def test_get_returns_current_currency(self):
+        response = self.client.get(
+            "/api/v1/auth/settings/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["currency"], "USD")
+
+
+    def test_settings_endpoint_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+
+        response = self.client.get(
+            "/api/v1/auth/settings/"
+        )
+
+        self.assertIn(response.status_code, [401, 403])

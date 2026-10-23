@@ -725,6 +725,82 @@ class ExpenseCSVImportAPITests(APITestCase):
         self.assertIn(response.status_code, [401, 403])
 
 
+    def test_import_rejects_missing_required_columns(self):
+        content = (
+                "Date,Amount\n"
+                "2026-09-10,12.50\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            Expense.objects.filter(user=self.user).count(),
+            0,
+        )
+
+
+    def test_import_rejects_unsupported_columns(self):
+        content = (
+            "Date,Amount,Category,Description,owner_id\n"
+            "2026-09-10,12.50,food,Groceries,999\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            Expense.objects.filter(user=self.user).count(),
+            0,
+        )
+
+
+    def test_import_rejects_non_csv_extension(self):
+        content = (
+            "Date,Amount,Category,Description\n"
+            "2026-09-10,12.50,food,Groceries\n"
+        )
+
+        response = self.post_csv(
+            content,
+            filename="expenses.txt",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            Expense.objects.filter(user=self.user).count(),
+            0,
+        )
+
+
+    def test_import_skips_duplicate_already_in_database(self):
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 10),
+            amount=Decimal("12.50"),
+            currency="USD",
+            category="food",
+            description="Groceries",
+        )
+
+        content = (
+            "Date,Amount,Category,Description\n"
+            "2026-09-10,12.50,food,Groceries\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["imported"], 0)
+        self.assertEqual(
+            response.data["skipped_duplicates"],
+            1,
+        )
+        self.assertEqual(
+            Expense.objects.filter(user=self.user).count(),
+            1,
+        )
+
 class ExpenseDuplicateAPITests(APITestCase):
     def setUp(self):
         User = get_user_model()
