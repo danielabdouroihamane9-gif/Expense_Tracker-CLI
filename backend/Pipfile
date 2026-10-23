@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "<5.3,>=5.2"
+djangorestframework = "*"
+djangorestframework-simplejwt = "*"
+django-filter = "*"
+python-decouple = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-django = "*"
+pytest-cov = "*"
+ruff = "*"
+
+[requires]
+python_version = "3.13"
+python_full_version = "3.13.15"
