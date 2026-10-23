@@ -11,10 +11,10 @@ django-filter = "*"
 python-decouple = "*"
 
 [dev-packages]
+ruff = "*"
 pytest = "*"
 pytest-django = "*"
 pytest-cov = "*"
-ruff = "*"
 
 [requires]
 python_version = "3.13"

@@ -1,0 +1,16 @@
+[run]
+branch = True
+source =
+    accounts
+    expenses
+    budgets
+omit =
+    */migrations/*
+    */test_*.py
+    */tests.py
+
+[report]
+show_missing = True
+skip_covered = True
+exclude_lines =
+    pragma: no cover
