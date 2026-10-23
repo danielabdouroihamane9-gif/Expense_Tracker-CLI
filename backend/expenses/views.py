@@ -1,9 +1,16 @@
+from decimal import Decimal
 
+from django.db.models import Sum
+from django.utils import timezone
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
-from .models import Expense
+from budgets.models import Budget
+from expenses.choices import ExpenseCategory
+from expenses.models import Expense
 from .serializers import ExpenseSerializer
 
 
@@ -51,3 +58,74 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             user=self.request.user,
             currency=user_settings.currency,
         )
+    
+    @action(detail=False, methods=["get"], url_path="summary")
+    def summary(self, request):
+        today = timezone.localdate()
+
+        monthly_expenses = self.get_queryset().filter(
+            occurred_on__year=today.year,
+            occurred_on__month=today.month,
+        )
+
+        spending_by_category = {
+            row["category"]: row["total"]
+            for row in monthly_expenses.values("category").annotate(
+                total=Sum("amount")
+            )
+        }
+
+        budget_by_category = dict(
+            Budget.objects.filter(
+                user=request.user
+            ).values_list("category", "amount")
+        )
+
+        user_settings = getattr(request.user, "settings", None)
+
+        categories = []
+        total_spent = Decimal("0.00")
+
+        for category, label in ExpenseCategory.choices:
+            spent = spending_by_category.get(
+                category,
+                Decimal("0.00"),
+            )
+
+            budget = budget_by_category.get(category)
+
+            remaining = (
+                budget - spent
+                if budget is not None
+                else None
+            )
+
+            percentage_used = None
+
+            if budget is not None and budget > 0:
+                percentage_used = (
+                    spent / budget * Decimal("100")
+                ).quantize(Decimal("0.01"))
+
+            categories.append({
+                "category": category,
+                "label": label,
+                "spent": spent,
+                "budget": budget,
+                "remaining": remaining,
+                "percentage_used": percentage_used,
+            })
+
+            total_spent += spent
+
+        return Response({
+            "year": today.year,
+            "month": today.month,
+            "currency": (
+                user_settings.currency
+                if user_settings is not None
+                else None
+            ),
+            "total_spent": total_spent,
+            "categories": categories,
+        })

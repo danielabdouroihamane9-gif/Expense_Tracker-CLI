@@ -1,14 +1,14 @@
-
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
+from django.utils import timezone
 
 from accounts.models import UserSettings
 from expenses.models import Expense
-
+from budgets.models import Budget
 
 User = get_user_model()
 
@@ -214,3 +214,142 @@ class ExpenseAPITests(APITestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class ExpenseMonthlySummaryAPITests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="summary_user",
+            password="TestPassword123!",
+        )
+        UserSettings.objects.create(
+            user=self.user,
+            currency="USD",
+        )
+
+        self.other_user = User.objects.create_user(
+            username="other_summary_user",
+            password="TestPassword123!",
+        )
+        UserSettings.objects.create(
+            user=self.other_user,
+            currency="USD",
+        )
+
+        self.today = timezone.localdate()
+        self.client.force_authenticate(user=self.user)
+
+    def test_summary_counts_current_month_and_own_expenses(self):
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=self.today,
+            amount=Decimal("12.50"),
+            currency="USD",
+            category="food",
+            description="Lunch",
+        )
+
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=self.today,
+            amount=Decimal("7.50"),
+            currency="USD",
+            category="food",
+            description="Dinner",
+        )
+
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=self.today,
+            amount=Decimal("5.00"),
+            currency="USD",
+            category="transport",
+            description="Bus fare",
+        )
+
+        previous_month_date = (
+            self.today.replace(day=1) - timedelta(days=1)
+        )
+
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=previous_month_date,
+            amount=Decimal("999.00"),
+            currency="USD",
+            category="food",
+            description="Previous month expense",
+        )
+
+        Expense.objects.create(
+            user=self.other_user,
+            occurred_on=self.today,
+            amount=Decimal("500.00"),
+            currency="USD",
+            category="food",
+            description="Another user's expense",
+        )
+
+        Budget.objects.create(
+            user=self.user,
+            category="food",
+            amount=Decimal("30.00"),
+        )
+
+        Budget.objects.create(
+            user=self.user,
+            category="transport",
+            amount=Decimal("10.00"),
+        )
+
+        response = self.client.get(
+            "/api/v1/expenses/summary/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["currency"], "USD")
+
+        self.assertEqual(
+            Decimal(str(response.data["total_spent"])),
+            Decimal("25.00"),
+        )
+
+        categories = {
+            item["category"]: item
+            for item in response.data["categories"]
+        }
+
+        food = categories["food"]
+        self.assertEqual(
+            Decimal(str(food["spent"])),
+            Decimal("20.00"),
+        )
+        self.assertEqual(
+            Decimal(str(food["budget"])),
+            Decimal("30.00"),
+        )
+        self.assertEqual(
+            Decimal(str(food["remaining"])),
+            Decimal("10.00"),
+        )
+        self.assertEqual(
+            Decimal(str(food["percentage_used"])),
+            Decimal("66.67"),
+        )
+
+        transport = categories["transport"]
+        self.assertEqual(
+            Decimal(str(transport["spent"])),
+            Decimal("5.00"),
+        )
+
+    def test_summary_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+
+        response = self.client.get(
+            "/api/v1/expenses/summary/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )

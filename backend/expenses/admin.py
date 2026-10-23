@@ -24,3 +24,4 @@ class ExpenseAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("id", "created_at")
     list_select_related = ("user",)
+    date_hierarchy = "occurred_on"
