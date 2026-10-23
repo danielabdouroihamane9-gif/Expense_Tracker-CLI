@@ -1,4 +1,6 @@
+import csv
 from decimal import Decimal
+from django.http import HttpResponse
 
 from django.db.models import Sum
 from django.utils import timezone
@@ -132,3 +134,55 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             "total_spent": total_spent,
             "categories": categories,
         })
+
+        
+    @action(detail=False, methods=["get"], url_path="export")
+    def export_csv(self, request):
+        # Apply the existing user-scoped queryset and API filters.
+        queryset = self.filter_queryset(self.get_queryset())
+
+        response = HttpResponse(
+            content_type="text/csv; charset=utf-8"
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="expenses-'
+            f'{timezone.localdate().isoformat()}.csv"'
+        )
+
+        # UTF-8 BOM improves compatibility with spreadsheet software.
+        response.write("\ufeff")
+
+        writer = csv.writer(response)
+
+        writer.writerow([
+            "id",
+            "occurred_on",
+            "amount",
+            "currency",
+            "category",
+            "description",
+            "created_at",
+        ])
+
+        for expense in queryset.iterator():
+            writer.writerow([
+                str(expense.id),
+                expense.occurred_on.isoformat(),
+                format(expense.amount, ".2f"),
+                expense.currency,
+                expense.category,
+                safe_csv_text(expense.description),
+                expense.created_at.isoformat(),
+            ])
+
+        return response
+
+
+def safe_csv_text(value):
+    """Neutralize potentially executable spreadsheet formulas."""
+    text = "" if value is None else str(value)
+
+    if text.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+        return "'" + text
+
+    return text

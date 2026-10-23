@@ -1,3 +1,5 @@
+import csv
+import io
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -425,3 +427,158 @@ class ExpenseSummaryDateSelectionTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+
+
+class ExpenseCSVExportAPITests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            username="csv_export_user",
+            password="StrongPass123!",
+        )
+        UserSettings.objects.create(
+            user=self.user,
+            currency="USD",
+        )
+
+        self.other_user = User.objects.create_user(
+            username="other_csv_user",
+            password="StrongPass123!",
+        )
+        UserSettings.objects.create(
+            user=self.other_user,
+            currency="USD",
+        )
+
+        self.food_expense = Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 1),
+            amount=Decimal("12.50"),
+            currency="USD",
+            category="food",
+            description="Groceries",
+        )
+
+        self.transport_expense = Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 2),
+            amount=Decimal("5.00"),
+            currency="USD",
+            category="transport",
+            description="Bus fare",
+        )
+
+        self.other_expense = Expense.objects.create(
+            user=self.other_user,
+            occurred_on=date(2026, 9, 3),
+            amount=Decimal("500.00"),
+            currency="USD",
+            category="food",
+            description="Private expense",
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def read_csv_rows(self, response):
+        content = response.content.decode("utf-8-sig")
+        return list(csv.DictReader(io.StringIO(content)))
+
+    def test_export_returns_csv_attachment(self):
+        response = self.client.get(
+            "/api/v1/expenses/export/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            response["Content-Type"].startswith("text/csv")
+        )
+        self.assertIn(
+            "attachment;",
+            response["Content-Disposition"],
+        )
+
+        rows = self.read_csv_rows(response)
+
+        self.assertEqual(len(rows), 2)
+        self.assertIn("amount", rows[0])
+        self.assertIn("description", rows[0])
+
+    def test_export_contains_only_current_users_expenses(self):
+        response = self.client.get(
+            "/api/v1/expenses/export/"
+        )
+
+        rows = self.read_csv_rows(response)
+        exported_ids = {row["id"] for row in rows}
+
+        self.assertEqual(
+            exported_ids,
+            {
+                str(self.food_expense.id),
+                str(self.transport_expense.id),
+            },
+        )
+        self.assertNotIn(
+            str(self.other_expense.id),
+            exported_ids,
+        )
+
+    def test_export_respects_category_filter(self):
+        response = self.client.get(
+            "/api/v1/expenses/export/",
+            {"category": "food"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        rows = self.read_csv_rows(response)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["category"], "food")
+        self.assertEqual(rows[0]["description"], "Groceries")
+
+    def test_export_respects_search_filter(self):
+        response = self.client.get(
+            "/api/v1/expenses/export/",
+            {"search": "Groceries"},
+        )
+
+        rows = self.read_csv_rows(response)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["description"], "Groceries")
+
+    def test_export_neutralizes_spreadsheet_formulas(self):
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 4),
+            amount=Decimal("1.00"),
+            currency="USD",
+            category="other",
+            description="=1+1",
+        )
+
+        response = self.client.get(
+            "/api/v1/expenses/export/"
+        )
+        rows = self.read_csv_rows(response)
+
+        formula_row = next(
+            row for row in rows
+            if row["description"] == "'=1+1"
+        )
+
+        self.assertEqual(
+            formula_row["description"],
+            "'=1+1",
+        )
+
+    def test_export_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+
+        response = self.client.get(
+            "/api/v1/expenses/export/"
+        )
+
+        self.assertIn(response.status_code, [401, 403])
