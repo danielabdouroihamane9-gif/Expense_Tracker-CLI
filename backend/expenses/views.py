@@ -17,7 +17,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from budgets.models import Budget
 from expenses.choices import ExpenseCategory
 from expenses.models import Expense
-from .serializers import ExpenseSerializer, MonthlySummaryQuerySerializer
+from .serializers import ExpenseSerializer, MonthlySummaryQuerySerializer, ExpenseDuplicateSerializer
 from accounts.models import UserSettings
 
 class ExpenseViewSet(viewsets.ModelViewSet):
@@ -291,6 +291,38 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="duplicate",
+    )
+    def duplicate(self, request, pk=None):
+        source = self.get_object()
+
+        input_serializer = ExpenseDuplicateSerializer(
+            data=request.data
+        )
+        input_serializer.is_valid(raise_exception=True)
+
+        duplicate = Expense.objects.create(
+            user=request.user,
+            occurred_on=input_serializer.validated_data["occurred_on"],
+            amount=source.amount,
+            currency=source.currency,
+            category=source.category,
+            description=source.description,
+        )
+
+        output_serializer = ExpenseSerializer(
+            duplicate,
+            context=self.get_serializer_context(),
+        )
+
+        return Response(
+            output_serializer.data,
+            status=status.HTTP_201_CREATED,
+        )
 
 def safe_csv_text(value):
     """Neutralize potentially executable spreadsheet formulas."""

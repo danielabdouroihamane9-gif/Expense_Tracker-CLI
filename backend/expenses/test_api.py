@@ -723,3 +723,99 @@ class ExpenseCSVImportAPITests(APITestCase):
         response = self.post_csv(content)
 
         self.assertIn(response.status_code, [401, 403])
+
+
+class ExpenseDuplicateAPITests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            username="duplicate_test_user",
+            password="StrongPass123!",
+        )
+        UserSettings.objects.create(
+            user=self.user,
+            currency="USD",
+        )
+
+        self.other_user = User.objects.create_user(
+            username="other_duplicate_user",
+            password="StrongPass123!",
+        )
+        UserSettings.objects.create(
+            user=self.other_user,
+            currency="USD",
+        )
+
+        self.expense = Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 1),
+            amount=Decimal("12.50"),
+            currency="USD",
+            category="food",
+            description="Groceries",
+        )
+
+        self.other_expense = Expense.objects.create(
+            user=self.other_user,
+            occurred_on=date(2026, 9, 2),
+            amount=Decimal("20.00"),
+            currency="USD",
+            category="shopping",
+            description="Personal purchase",
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_duplicate_creates_new_expense(self):
+        response = self.client.post(
+            f"/api/v1/expenses/{self.expense.id}/duplicate/",
+            {"occurred_on": "2026-09-10"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+        duplicate = Expense.objects.get(
+            user=self.user,
+            occurred_on=date(2026, 9, 10),
+        )
+
+        self.assertNotEqual(
+            duplicate.id,
+            self.expense.id,
+        )
+        self.assertEqual(
+            duplicate.amount,
+            self.expense.amount,
+        )
+        self.assertEqual(
+            duplicate.category,
+            self.expense.category,
+        )
+        self.assertEqual(
+            duplicate.description,
+            self.expense.description,
+        )
+        self.assertEqual(
+            duplicate.currency,
+            self.expense.currency,
+        )
+
+    def test_cannot_duplicate_another_users_expense(self):
+        response = self.client.post(
+            f"/api/v1/expenses/{self.other_expense.id}/duplicate/",
+            {"occurred_on": "2026-09-10"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_duplicate_requires_a_valid_date(self):
+        response = self.client.post(
+            f"/api/v1/expenses/{self.expense.id}/duplicate/",
+            {"occurred_on": "not-a-date"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)

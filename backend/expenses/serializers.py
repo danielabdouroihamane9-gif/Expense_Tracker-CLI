@@ -93,3 +93,7 @@ class MonthlySummaryQuerySerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class ExpenseDuplicateSerializer(serializers.Serializer):
+    occurred_on = serializers.DateField()
