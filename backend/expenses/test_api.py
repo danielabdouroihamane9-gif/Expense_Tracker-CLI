@@ -819,3 +819,117 @@ class ExpenseDuplicateAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+
+class ExpenseStatisticsAPITests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            username="statistics_user",
+            password="StrongPass123!",
+        )
+        UserSettings.objects.create(
+            user=self.user,
+            currency="USD",
+        )
+
+        self.other_user = User.objects.create_user(
+            username="other_statistics_user",
+            password="StrongPass123!",
+        )
+        UserSettings.objects.create(
+            user=self.other_user,
+            currency="USD",
+        )
+
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 1),
+            amount=Decimal("12.50"),
+            currency="USD",
+            category="food",
+            description="Groceries",
+        )
+
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 2),
+            amount=Decimal("5.00"),
+            currency="USD",
+            category="transport",
+            description="Bus fare",
+        )
+
+        Expense.objects.create(
+            user=self.other_user,
+            occurred_on=date(2026, 9, 3),
+            amount=Decimal("500.00"),
+            currency="USD",
+            category="food",
+            description="Private expense",
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_statistics_include_only_current_users_expenses(self):
+        response = self.client.get(
+            "/api/v1/expenses/statistics/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+
+        self.assertEqual(
+            Decimal(str(response.data["total_spending"])),
+            Decimal("17.50"),
+        )
+
+        self.assertEqual(
+            Decimal(str(response.data["average_expense"])),
+            Decimal("8.75"),
+        )
+
+        self.assertEqual(
+            response.data["highest_expense"]["description"],
+            "Groceries",
+        )
+        self.assertEqual(
+            response.data["lowest_expense"]["description"],
+            "Bus fare",
+        )
+
+        self.assertEqual(
+            response.data["spending_by_category"][0]["category"],
+            "food",
+        )
+
+    def test_statistics_respect_category_filter(self):
+        response = self.client.get(
+            "/api/v1/expenses/statistics/",
+            {"category": "food"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+
+        self.assertEqual(
+            Decimal(str(response.data["total_spending"])),
+            Decimal("12.50"),
+        )
+
+    def test_statistics_handle_no_matching_expenses(self):
+        response = self.client.get(
+            "/api/v1/expenses/statistics/",
+            {"category": "healthcare"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 0)
+        self.assertEqual(
+            Decimal(str(response.data["total_spending"])),
+            Decimal("0.00"),
+        )
+        self.assertIsNone(response.data["highest_expense"])
+        self.assertIsNone(response.data["lowest_expense"])
+        self.assertEqual(response.data["spending_by_category"], [])

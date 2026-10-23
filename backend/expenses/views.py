@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django.http import HttpResponse
 from django.db import transaction
 
-from django.db.models import Sum
+from django.db.models import Sum, Avg, Count
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -323,6 +323,88 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             output_serializer.data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="statistics",
+    )
+    def statistics(self, request):
+        # get_queryset() already restricts records to the current user.
+        # Existing API filters are applied to the report as well.
+        queryset = self.filter_queryset(self.get_queryset())
+
+        aggregates = queryset.aggregate(
+            count=Count("id"),
+            total=Sum("amount"),
+            average=Avg("amount"),
+        )
+
+        total = (
+            aggregates["total"] or Decimal("0.00")
+        ).quantize(Decimal("0.01"))
+
+        average = (
+            aggregates["average"] or Decimal("0.00")
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        highest = queryset.order_by(
+            "-amount",
+            "-occurred_on",
+            "id",
+        ).first()
+
+        lowest = queryset.order_by(
+            "amount",
+            "occurred_on",
+            "id",
+        ).first()
+
+        category_rows = queryset.values(
+            "category"
+        ).annotate(
+            total=Sum("amount"),
+            count=Count("id"),
+        ).order_by(
+            "-total",
+            "category",
+        )
+
+        spending_by_category = [
+            {
+                "category": row["category"],
+                "total": row["total"],
+                "count": row["count"],
+            }
+            for row in category_rows
+        ]
+
+        context = self.get_serializer_context()
+
+        return Response({
+            "count": aggregates["count"],
+            "total_spending": total,
+            "average_expense": average,
+            "highest_expense": (
+                ExpenseSerializer(
+                    highest,
+                    context=context,
+                ).data
+                if highest else None
+            ),
+            "lowest_expense": (
+                ExpenseSerializer(
+                    lowest,
+                    context=context,
+                ).data
+                if lowest else None
+            ),
+            "spending_by_category": spending_by_category,
+            "top_categories": spending_by_category[:5],
+        })
 
 def safe_csv_text(value):
     """Neutralize potentially executable spreadsheet formulas."""
