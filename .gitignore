@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.manifest
+*.spec
 
 # Distribution / packaging
 build/
@@ -45,3 +47,11 @@ settings.json
 
 # AI extension logs and local cache
 .continue/
+
+# --- DJANGO BACKEND ---
+backend/.venv/
+backend/.env
+backend/db.sqlite3
+*.sqlite3
+media/
+staticfiles/
