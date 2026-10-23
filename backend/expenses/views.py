@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from budgets.models import Budget
 from expenses.choices import ExpenseCategory
 from expenses.models import Expense
-from .serializers import ExpenseSerializer
+from .serializers import ExpenseSerializer, MonthlySummaryQuerySerializer
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
@@ -59,26 +59,34 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             currency=user_settings.currency,
         )
     
+        
     @action(detail=False, methods=["get"], url_path="summary")
     def summary(self, request):
+        query_serializer = MonthlySummaryQuerySerializer(
+            data=request.query_params
+        )
+        query_serializer.is_valid(raise_exception=True)
+
         today = timezone.localdate()
 
+        year = query_serializer.validated_data.get("year", today.year)
+        month = query_serializer.validated_data.get("month", today.month)
+
         monthly_expenses = self.get_queryset().filter(
-            occurred_on__year=today.year,
-            occurred_on__month=today.month,
+            occurred_on__year=year,
+            occurred_on__month=month,
         )
 
         spending_by_category = {
             row["category"]: row["total"]
-            for row in monthly_expenses.values("category").annotate(
-                total=Sum("amount")
-            )
+            for row in monthly_expenses
+            .values("category")
+            .annotate(total=Sum("amount"))
         }
 
         budget_by_category = dict(
-            Budget.objects.filter(
-                user=request.user
-            ).values_list("category", "amount")
+            Budget.objects.filter(user=request.user)
+            .values_list("category", "amount")
         )
 
         user_settings = getattr(request.user, "settings", None)
@@ -88,20 +96,15 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
         for category, label in ExpenseCategory.choices:
             spent = spending_by_category.get(
-                category,
-                Decimal("0.00"),
+                category, Decimal("0.00")
             )
-
             budget = budget_by_category.get(category)
 
             remaining = (
-                budget - spent
-                if budget is not None
-                else None
+                budget - spent if budget is not None else None
             )
 
             percentage_used = None
-
             if budget is not None and budget > 0:
                 percentage_used = (
                     spent / budget * Decimal("100")
@@ -119,8 +122,8 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             total_spent += spent
 
         return Response({
-            "year": today.year,
-            "month": today.month,
+            "year": year,
+            "month": month,
             "currency": (
                 user_settings.currency
                 if user_settings is not None

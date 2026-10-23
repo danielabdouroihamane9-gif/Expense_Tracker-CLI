@@ -353,3 +353,75 @@ class ExpenseMonthlySummaryAPITests(APITestCase):
             response.status_code,
             status.HTTP_401_UNAUTHORIZED,
         )
+
+    
+class ExpenseSummaryDateSelectionTests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            username="summary_date_user",
+            password="StrongPass123!",
+        )
+
+        UserSettings.objects.create(
+            user=self.user,
+            currency="USD",
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_summary_returns_selected_month(self):
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 10),
+            amount=Decimal("12.50"),
+            currency="USD",
+            category="food",
+            description="September expense",
+        )
+
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 10, 10),
+            amount=Decimal("8.00"),
+            currency="USD",
+            category="food",
+            description="October expense",
+        )
+
+        response = self.client.get(
+            "/api/v1/expenses/summary/",
+            {"year": 2026, "month": 9},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["year"], 2026)
+        self.assertEqual(response.data["month"], 9)
+
+        food = next(
+            item
+            for item in response.data["categories"]
+            if item["category"] == "food"
+        )
+
+        self.assertEqual(
+            Decimal(str(food["spent"])),
+            Decimal("12.50"),
+        )
+
+    def test_summary_rejects_invalid_month(self):
+        response = self.client.get(
+            "/api/v1/expenses/summary/",
+            {"year": 2026, "month": 13},
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_summary_requires_year_and_month_together(self):
+        response = self.client.get(
+            "/api/v1/expenses/summary/",
+            {"month": 9},
+        )
+
+        self.assertEqual(response.status_code, 400)

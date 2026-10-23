@@ -68,3 +68,28 @@ class ExpenseSerializer(serializers.ModelSerializer):
             })
 
         return super().to_internal_value(data)
+
+
+class MonthlySummaryQuerySerializer(serializers.Serializer):
+    year = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=9999,
+    )
+    month = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=12,
+    )
+
+    def validate(self, attrs):
+        has_year = "year" in attrs
+        has_month = "month" in attrs
+
+        if has_year != has_month:
+            raise serializers.ValidationError(
+                "Provide both 'year' and 'month', "
+                "or omit both to use the current month."
+            )
+
+        return attrs
