@@ -1,4 +1,4 @@
-
+import re
 from django.contrib.auth import get_user_model, password_validation
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
@@ -114,3 +114,43 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return None
 
         return user_settings.currency
+
+
+class UserSettingsSerializer(serializers.ModelSerializer):
+    currency = serializers.CharField(max_length=3)
+
+    class Meta:
+        model = UserSettings
+        fields = ["currency"]
+
+    def validate_currency(self, value):
+        currency = value.strip().upper()
+
+        if not re.fullmatch(r"[A-Z]{3}", currency, flags=re.ASCII):
+            raise serializers.ValidationError(
+                "Enter a valid three-letter currency code."
+            )
+
+        # Only enforce the change restriction when the value changes.
+        if self.instance and currency != self.instance.currency:
+            from budgets.models import Budget
+            from expenses.models import Expense
+
+            user = self.instance.user
+
+            has_expenses = Expense.objects.filter(
+                user=user
+            ).exists()
+
+            has_budgets = Budget.objects.filter(
+                user=user
+            ).exists()
+
+            if has_expenses or has_budgets:
+                raise serializers.ValidationError(
+                    "Currency cannot be changed while expenses "
+                    "or budgets exist. No currency conversion "
+                    "is performed."
+                )
+
+        return currency

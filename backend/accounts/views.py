@@ -1,4 +1,4 @@
-
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import (
 from .serializers import (
     RegistrationSerializer,
     UserProfileSerializer,
+    UserSettingsSerializer,
 )
 
 
@@ -46,3 +47,11 @@ class CurrentUserView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserSettingsView(RetrieveUpdateAPIView):
+    serializer_class = UserSettingsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.settings

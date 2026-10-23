@@ -6,6 +6,7 @@ from .views import (
     PublicTokenObtainPairView,
     PublicTokenRefreshView,
     RegistrationView,
+    UserSettingsView,
 )
 
 
@@ -30,4 +31,9 @@ urlpatterns = [
         CurrentUserView.as_view(),
         name="current_user",
     ),
+    path(
+        "settings/",
+        UserSettingsView.as_view(),
+        name="user_settings",
+),
 ]

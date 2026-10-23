@@ -1,10 +1,12 @@
-
+from datetime import date
+from decimal import Decimal
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import UserSettings
-
+from budgets.models import Budget
+from expenses.models import Expense
 
 User = get_user_model()
 
@@ -152,3 +154,83 @@ class AuthenticationAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["username"], "loginuser")
         self.assertEqual(response.data["currency"], "MYR")
+
+
+class UserSettingsAPITests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            username="settings_test_user",
+            password="StrongPass123!",
+        )
+
+        self.settings = UserSettings.objects.create(
+            user=self.user,
+            currency="USD",
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_user_can_change_currency_without_financial_data(self):
+        response = self.client.patch(
+            "/api/v1/auth/settings/",
+            {"currency": "myr"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.settings.refresh_from_db()
+        self.assertEqual(self.settings.currency, "MYR")
+
+    def test_invalid_currency_is_rejected(self):
+        response = self.client.patch(
+            "/api/v1/auth/settings/",
+            {"currency": "US"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        self.settings.refresh_from_db()
+        self.assertEqual(self.settings.currency, "USD")
+
+    def test_currency_change_is_blocked_when_expenses_exist(self):
+        Expense.objects.create(
+            user=self.user,
+            occurred_on=date(2026, 9, 1),
+            amount=Decimal("12.50"),
+            currency="USD",
+            category="food",
+            description="Lunch",
+        )
+
+        response = self.client.patch(
+            "/api/v1/auth/settings/",
+            {"currency": "MYR"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        self.settings.refresh_from_db()
+        self.assertEqual(self.settings.currency, "USD")
+
+    def test_currency_change_is_blocked_when_budgets_exist(self):
+        Budget.objects.create(
+            user=self.user,
+            category="food",
+            amount=Decimal("100.00"),
+        )
+
+        response = self.client.patch(
+            "/api/v1/auth/settings/",
+            {"currency": "MYR"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        self.settings.refresh_from_db()
+        self.assertEqual(self.settings.currency, "USD")
