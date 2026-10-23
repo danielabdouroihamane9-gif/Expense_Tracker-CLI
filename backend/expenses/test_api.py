@@ -2,6 +2,7 @@ import csv
 import io
 from datetime import date, timedelta
 from decimal import Decimal
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from django.contrib.auth import get_user_model
 from rest_framework import status
@@ -580,5 +581,145 @@ class ExpenseCSVExportAPITests(APITestCase):
         response = self.client.get(
             "/api/v1/expenses/export/"
         )
+
+        self.assertIn(response.status_code, [401, 403])
+
+
+class ExpenseCSVImportAPITests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            username="csv_import_user",
+            password="StrongPass123!",
+        )
+
+        UserSettings.objects.create(
+            user=self.user,
+            currency="USD",
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def post_csv(self, content, filename="expenses.csv"):
+        uploaded_file = SimpleUploadedFile(
+            filename,
+            content.encode("utf-8"),
+            content_type="text/csv",
+        )
+
+        return self.client.post(
+            "/api/v1/expenses/import/",
+            {"file": uploaded_file},
+            format="multipart",
+        )
+
+    def test_imports_legacy_cli_csv(self):
+        content = (
+            "Date,Amount,Category,Description\n"
+            "2026-09-10,12.50,FOOD,Groceries\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["imported"], 1)
+        self.assertEqual(
+            response.data["skipped_duplicates"], 0
+        )
+
+        expense = Expense.objects.get(user=self.user)
+
+        self.assertEqual(str(expense.occurred_on), "2026-09-10")
+        self.assertEqual(str(expense.amount), "12.50")
+        self.assertEqual(expense.category, "food")
+        self.assertEqual(expense.currency, "USD")
+        self.assertEqual(expense.description, "Groceries")
+
+    def test_imports_django_export_format(self):
+        content = (
+            "id,occurred_on,amount,currency,category,"
+            "description,created_at\n"
+            "not-imported,2026-09-11,5.00,USD,transport,"
+            "Bus fare,2026-09-11T10:00:00Z\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["imported"], 1)
+
+        expense = Expense.objects.get(user=self.user)
+
+        self.assertEqual(expense.category, "transport")
+        self.assertEqual(expense.description, "Bus fare")
+
+    def test_invalid_row_rejects_entire_import(self):
+        content = (
+            "Date,Amount,Category,Description\n"
+            "2026-09-10,12.50,food,Valid row\n"
+            "2026-09-11,-5.00,transport,Invalid amount\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data["detail"],
+            "CSV import rejected. No expenses were created.",
+        )
+        self.assertEqual(
+            Expense.objects.filter(user=self.user).count(),
+            0,
+        )
+        self.assertEqual(response.data["errors"][0]["row"], 3)
+
+    def test_currency_mismatch_rejects_entire_import(self):
+        content = (
+            "Date,Amount,Currency,Category,Description\n"
+            "2026-09-10,12.50,USD,food,Valid row\n"
+            "2026-09-11,5.00,KMF,transport,Wrong currency\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            Expense.objects.filter(user=self.user).count(),
+            0,
+        )
+        self.assertEqual(
+            response.data["errors"][0]["row"],
+            3,
+        )
+
+    def test_duplicate_rows_are_skipped(self):
+        content = (
+            "Date,Amount,Category,Description\n"
+            "2026-09-10,12.50,food,Groceries\n"
+            "2026-09-10,12.50,food,Groceries\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["imported"], 1)
+        self.assertEqual(
+            response.data["skipped_duplicates"], 1
+        )
+        self.assertEqual(
+            Expense.objects.filter(user=self.user).count(),
+            1,
+        )
+
+    def test_import_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+
+        content = (
+            "Date,Amount,Category,Description\n"
+            "2026-09-10,12.50,food,Groceries\n"
+        )
+
+        response = self.post_csv(content)
 
         self.assertIn(response.status_code, [401, 403])
