@@ -9,6 +9,10 @@ djangorestframework = "*"
 djangorestframework-simplejwt = "*"
 django-filter = "*"
 python-decouple = "*"
+gunicorn = "*"
+whitenoise = "*"
+dj-database-url = "*"
+psycopg = {extras = ["binary"], version = "*"}
 
 [dev-packages]
 ruff = "*"
