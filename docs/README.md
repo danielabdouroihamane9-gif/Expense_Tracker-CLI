@@ -10,6 +10,14 @@
 - [Persistence reliability](PERSISTENCE_RELIABILITY.md)
 - [Quality automation](QUALITY_AUTOMATION.md)
 
+## Django backend deployment
+
+Configure the Render backend's `CORS_ALLOWED_ORIGINS` environment variable
+with the exact deployed frontend origin, including its scheme and hostname
+but no path or trailing slash. Use the actual Vercel deployment origin; do
+not use a placeholder domain or allow all origins. Separate multiple origins
+with commas and redeploy Render after changing the setting.
+
 ## Phase 1 status
 
 - [Upgrade roadmap](PHASE_1_UPGRADE_ROADMAP.md)
