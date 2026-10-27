@@ -62,6 +62,23 @@ class ExpenseAPITests(APITestCase):
         self.assertEqual(response.data["user"], self.user.pk)
         self.assertEqual(Expense.objects.count(), 1)
 
+    def test_create_rejects_future_occurred_on(self):
+        future_date = (timezone.localdate() + timedelta(days=1)).isoformat()
+        response = self.client.post(
+            self.url,
+            {
+                "occurred_on": future_date,
+                "amount": "12.30",
+                "category": "food",
+                "description": "Future lunch",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("occurred_on", response.data)
+        self.assertEqual(Expense.objects.count(), 0)
+
     def test_expense_uses_users_configured_currency(self):
         settings = self.user.settings
         settings.currency = "MYR"
@@ -156,6 +173,21 @@ class ExpenseAPITests(APITestCase):
 
         expense.refresh_from_db()
         self.assertEqual(expense.description, "Updated lunch")
+
+    def test_update_rejects_future_occurred_on(self):
+        expense = self.make_expense()
+        future_date = (timezone.localdate() + timedelta(days=1)).isoformat()
+
+        response = self.client.patch(
+            f"{self.url}{expense.id}/",
+            {"occurred_on": future_date},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("occurred_on", response.data)
+        expense.refresh_from_db()
+        self.assertNotEqual(expense.occurred_on.isoformat(), future_date)
 
     def test_delete_own_expense(self):
         expense = self.make_expense()
@@ -674,6 +706,26 @@ class ExpenseCSVImportAPITests(APITestCase):
         )
         self.assertEqual(response.data["errors"][0]["row"], 3)
 
+    def test_future_date_rejects_entire_import(self):
+        future_date = (timezone.localdate() + timedelta(days=1)).isoformat()
+        content = (
+            "Date,Amount,Category,Description\n"
+            f"{future_date},12.50,food,Future expense\n"
+        )
+
+        response = self.post_csv(content)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "CSV import rejected. No expenses were created.",
+        )
+        self.assertEqual(
+            response.data["errors"][0]["errors"]["occurred_on"],
+            ["Date cannot be in the future."],
+        )
+        self.assertEqual(Expense.objects.filter(user=self.user).count(), 0)
+
     def test_currency_mismatch_rejects_entire_import(self):
         content = (
             "Date,Amount,Currency,Category,Description\n"
@@ -895,6 +947,22 @@ class ExpenseDuplicateAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+
+    def test_duplicate_rejects_future_date(self):
+        future_date = (timezone.localdate() + timedelta(days=1)).isoformat()
+        response = self.client.post(
+            f"/api/v1/expenses/{self.expense.id}/duplicate/",
+            {"occurred_on": future_date},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("occurred_on", response.data)
+        self.assertEqual(
+            Expense.objects.filter(user=self.user).count(),
+            1,
+        )
 
 
 class ExpenseStatisticsAPITests(APITestCase):

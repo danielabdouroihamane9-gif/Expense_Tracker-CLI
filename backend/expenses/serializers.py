@@ -1,10 +1,19 @@
 
 from decimal import Decimal
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import Expense
 from .choices import ExpenseCategory
+
+
+def validate_expense_occurred_on(value):
+    if value > timezone.localdate():
+        raise serializers.ValidationError(
+            "Date cannot be in the future."
+        )
+    return value
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -69,6 +78,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
         return super().to_internal_value(data)
 
+    def validate_occurred_on(self, value):
+        return validate_expense_occurred_on(value)
+
 
 class MonthlySummaryQuerySerializer(serializers.Serializer):
     year = serializers.IntegerField(
@@ -97,3 +109,6 @@ class MonthlySummaryQuerySerializer(serializers.Serializer):
 
 class ExpenseDuplicateSerializer(serializers.Serializer):
     occurred_on = serializers.DateField()
+
+    def validate_occurred_on(self, value):
+        return validate_expense_occurred_on(value)
