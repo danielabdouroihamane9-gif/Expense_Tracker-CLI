@@ -1,16 +1,24 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv, type UserConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'https://expense-tracker-api-n5s7.onrender.com',
-        changeOrigin: true,
-        secure: true,
+export function createViteConfig(
+  mode: string,
+  env = loadEnv(mode, process.cwd(), 'API_PROXY_TARGET'),
+): UserConfig {
+  const target = env.API_PROXY_TARGET?.trim() || 'http://127.0.0.1:8000'
+
+  return {
+    plugins: [react(), tailwindcss()],
+    server: {
+      proxy: {
+        '/api': {
+          target,
+          changeOrigin: true,
+        },
       },
     },
-  },
-})
+  }
+}
+
+export default defineConfig(({ mode }) => createViteConfig(mode))

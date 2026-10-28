@@ -22,6 +22,8 @@ import { CATEGORY_LABELS, EXPENSE_CATEGORIES } from "../../types/api"
 import type { Expense, ExpenseInput } from "../../types/api"
 import { formatCurrency } from "../../lib/currency"
 import { getApiErrorMessage, getFieldErrors } from "../../lib/api-errors"
+import { CategoryIcon } from "./CategoryIcon"
+import { futureExpenseDateRows } from "./csv-validation"
 import { useAuth } from "../auth/auth-context"
 import {
   createExpense,
@@ -33,12 +35,12 @@ import {
   updateExpense,
   type ExpenseFilters,
 } from "./api"
-import { expenseFormSchema, type ExpenseFormValues } from "./schema"
-
-function todayDate() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
-}
+import {
+  expenseDateSchema,
+  expenseFormSchema,
+  localDateString,
+  type ExpenseFormValues,
+} from "./schema"
 
 function makeFilters(
   search: string,
@@ -97,7 +99,7 @@ export function ExpensesPage() {
   const [editing, setEditing] = useState<Expense | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null)
   const [duplicateTarget, setDuplicateTarget] = useState<Expense | null>(null)
-  const [today] = useState(todayDate)
+  const today = localDateString()
   const [duplicateDate, setDuplicateDate] = useState(today)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -230,6 +232,29 @@ export function ExpensesPage() {
       event.target.value = ""
       return
     }
+
+    let csvText: string
+    try {
+      csvText = await file.text()
+    } catch {
+      setSelectedFile(null)
+      event.target.value = ""
+      toast.error("Couldn’t read this CSV file. Choose it again or try another file.")
+      return
+    }
+
+    const futureRows = futureExpenseDateRows(csvText, today)
+    if (futureRows.length > 0) {
+      setSelectedFile(null)
+      setImportErrors(futureRows.map((row) => ({
+        row,
+        errors: { occurred_on: ["Date cannot be in the future."] },
+      })))
+      event.target.value = ""
+      toast.error("Future expense dates were found. Correct the listed rows before importing.")
+      return
+    }
+
     setSelectedFile(file)
   }
 
@@ -261,6 +286,17 @@ export function ExpensesPage() {
   const lastRow = Math.min(page * 20, count)
   const anyFilters = Boolean(search || category || startDate || endDate || minAmount || maxAmount)
   const currency = user?.currency
+  const duplicateDateValidation = expenseDateSchema.safeParse(duplicateDate)
+
+  function expenseActions(expense: Expense) {
+    return (
+      <div className="row-actions">
+        <Button variant="ghost" size="icon" aria-label={`Edit ${expense.description}`} onClick={() => openEdit(expense)}><Pencil size={15} /></Button>
+        <Button variant="ghost" size="icon" aria-label={`Duplicate ${expense.description}`} onClick={() => { setDuplicateDate(today); setDuplicateTarget(expense) }}><Copy size={15} /></Button>
+        <Button variant="ghost" size="icon" aria-label={`Delete ${expense.description}`} onClick={() => setDeleteTarget(expense)}><Trash2 size={15} /></Button>
+      </div>
+    )
+  }
 
   return (
     <div className="page-stack">
@@ -320,19 +356,33 @@ export function ExpensesPage() {
                 <tbody>
                   {rows.map((expense) => (
                     <tr key={expense.id}>
-                      <td><div className="transaction-cell"><span className={`category-avatar tone-${expense.category}`}>{CATEGORY_LABELS[expense.category].slice(0, 1)}</span><span className="transaction-text"><strong>{expense.description}</strong><small>{expense.currency}</small></span></div></td>
+                      <td><div className="transaction-cell"><span className={`category-avatar tone-${expense.category}`}><CategoryIcon category={expense.category} /></span><span className="transaction-text"><strong>{expense.description}</strong><small>{expense.currency}</small></span></div></td>
                       <td><span className={`category-pill tone-${expense.category}`}>{CATEGORY_LABELS[expense.category]}</span></td>
                       <td className="date-cell">{new Date(`${expense.occurred_on}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
                       <td className="amount-cell"><strong>{formatCurrency(expense.amount, expense.currency)}</strong></td>
-                      <td><div className="row-actions">
-                        <Button variant="ghost" size="icon" aria-label={`Edit ${expense.description}`} onClick={() => openEdit(expense)}><Pencil size={15} /></Button>
-                        <Button variant="ghost" size="icon" aria-label={`Duplicate ${expense.description}`} onClick={() => { setDuplicateDate(todayDate()); setDuplicateTarget(expense) }}><Copy size={15} /></Button>
-                        <Button variant="ghost" size="icon" aria-label={`Delete ${expense.description}`} onClick={() => setDeleteTarget(expense)}><Trash2 size={15} /></Button>
-                      </div></td>
+                      <td>{expenseActions(expense)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="mobile-expense-list">
+              {rows.map((expense) => (
+                <article className="mobile-expense-card" key={expense.id}>
+                  <div className="mobile-expense-main">
+                    <span className={`category-avatar tone-${expense.category}`}><CategoryIcon category={expense.category} /></span>
+                    <div className="mobile-expense-description">
+                      <strong>{expense.description}</strong>
+                      <span>{new Date(`${expense.occurred_on}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+                    </div>
+                    <strong className="mobile-expense-amount">{formatCurrency(expense.amount, expense.currency)}</strong>
+                  </div>
+                  <div className="mobile-expense-footer">
+                    <span className={`category-pill tone-${expense.category}`}>{CATEGORY_LABELS[expense.category]}</span>
+                    {expenseActions(expense)}
+                  </div>
+                </article>
+              ))}
             </div>
             <div className="pagination">
               <span>Showing {firstRow}–{lastRow} of {count}</span>
@@ -347,15 +397,15 @@ export function ExpensesPage() {
           <label className="field"><span>Description</span><input maxLength={500} placeholder="e.g. Weekly groceries" {...form.register("description")} aria-invalid={Boolean(form.formState.errors.description)} />{form.formState.errors.description && <span className="field-error">{form.formState.errors.description.message}</span>}</label>
           <div className="field-row">
             <label className="field"><span>{currency ? `Amount (${currency})` : "Amount"}</span><input inputMode="decimal" placeholder="0.00" {...form.register("amount")} aria-invalid={Boolean(form.formState.errors.amount)} />{form.formState.errors.amount && <span className="field-error">{form.formState.errors.amount.message}</span>}</label>
-            <label className="field"><span>Date</span><input type="date" {...form.register("occurred_on")} aria-invalid={Boolean(form.formState.errors.occurred_on)} />{form.formState.errors.occurred_on && <span className="field-error">{form.formState.errors.occurred_on.message}</span>}</label>
+            <label className="field"><span>Date</span><input type="date" max={today} {...form.register("occurred_on")} aria-invalid={Boolean(form.formState.errors.occurred_on)} />{form.formState.errors.occurred_on && <span className="field-error">{form.formState.errors.occurred_on.message}</span>}</label>
           </div>
           <label className="field"><span>Category</span><select {...form.register("category")} aria-invalid={Boolean(form.formState.errors.category)}>{EXPENSE_CATEGORIES.map((item) => <option value={item} key={item}>{CATEGORY_LABELS[item]}</option>)}</select>{form.formState.errors.category && <span className="field-error">{form.formState.errors.category.message}</span>}</label>
           <p className="field-hint">{currency ? "Currency and account ownership are set securely by the API." : "Currency is assigned by the API from your account settings."}</p>
         </form>
       </Dialog>
 
-      <Dialog open={Boolean(duplicateTarget)} onOpenChange={(open) => { if (!open) setDuplicateTarget(null) }} title="Duplicate expense" description={duplicateTarget ? `Create a new ${CATEGORY_LABELS[duplicateTarget.category].toLowerCase()} expense based on “${duplicateTarget.description}”.` : undefined} footer={<><Button variant="outline" onClick={() => setDuplicateTarget(null)}>Cancel</Button><Button disabled={duplicateMutation.isPending || !duplicateDate} onClick={() => duplicateTarget && duplicateMutation.mutate({ expense: duplicateTarget, occurredOn: duplicateDate })}>{duplicateMutation.isPending ? "Duplicating…" : "Create duplicate"}</Button></>}>
-        <label className="field"><span>Date for the new expense</span><input type="date" value={duplicateDate} onChange={(event) => setDuplicateDate(event.target.value)} /></label>
+      <Dialog open={Boolean(duplicateTarget)} onOpenChange={(open) => { if (!open) setDuplicateTarget(null) }} title="Duplicate expense" description={duplicateTarget ? `Create a new ${CATEGORY_LABELS[duplicateTarget.category].toLowerCase()} expense based on “${duplicateTarget.description}”.` : undefined} footer={<><Button variant="outline" onClick={() => setDuplicateTarget(null)}>Cancel</Button>      <Button disabled={duplicateMutation.isPending || !duplicateDateValidation.success} onClick={() => duplicateTarget && duplicateMutation.mutate({ expense: duplicateTarget, occurredOn: duplicateDate })}>{duplicateMutation.isPending ? "Duplicating…" : "Create duplicate"}</Button></>}>
+        <label className="field"><span>Date for the new expense</span><input type="date" max={today} value={duplicateDate} aria-invalid={!duplicateDateValidation.success} onChange={(event) => setDuplicateDate(event.target.value)} />{!duplicateDateValidation.success && <span className="field-error">{duplicateDateValidation.error.issues[0]?.message}</span>}</label>
         <p className="field-hint duplicate-detail">{duplicateTarget && formatCurrency(duplicateTarget.amount, duplicateTarget.currency)} · {duplicateTarget?.description}</p>
       </Dialog>
 

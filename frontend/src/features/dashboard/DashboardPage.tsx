@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { lazy, Suspense, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   ArrowDownRight,
@@ -7,40 +7,20 @@ import {
   Plus,
   WalletCards,
 } from "lucide-react"
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
 import { Link } from "react-router-dom"
 import { Button } from "../../components/ui/button"
 import { EmptyState, ErrorState, LoadingState, PageHeader } from "../../components/shared/PageElements"
 import { CATEGORY_LABELS } from "../../types/api"
-import type { ExpenseCategory, MonthlySummary } from "../../types/api"
+import type { MonthlySummary } from "../../types/api"
 import { formatCurrency, sumAmounts } from "../../lib/currency"
 import { getApiErrorMessage } from "../../lib/api-errors"
 import { getExpenses } from "../expenses/api"
 import { getMonthlySummary } from "./api"
 import { getExpenseStatistics } from "../expenses/api"
 import { useAuth } from "../auth/auth-context"
+import { CategoryIcon } from "../expenses/CategoryIcon"
 
-const chartColors: Record<ExpenseCategory, string> = {
-  food: "#5d8f76",
-  transport: "#e1a766",
-  rent: "#7795bd",
-  utilities: "#c99382",
-  entertainment: "#9b86bd",
-  healthcare: "#70a7a2",
-  shopping: "#cb9c5b",
-  other: "#9aa6a1",
-}
+const DashboardCharts = lazy(() => import("./DashboardCharts"))
 
 function monthBounds(year: number, month: number) {
   const start = new Date(year, month - 1, 1)
@@ -179,60 +159,17 @@ export function DashboardPage() {
         />
       )}
 
-      <section className="dashboard-grid">
-        <article className="panel chart-panel">
-          <div className="panel-heading">
-            <div><h2>Spending trend</h2><p>Monthly totals from your expense history</p></div>
-            <span className="panel-period">Last 6 months</span>
-          </div>
-          {trendQuery.isPending ? <LoadingState label="Loading trend…" /> : trendQuery.isError ? <ErrorState message={getApiErrorMessage(trendQuery.error)} onRetry={() => void trendQuery.refetch()} /> : (
-            <div className="chart-wrap chart-trend">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trendData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="#edf0ee" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "#929b96", fontSize: 12 }} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "#929b96", fontSize: 11 }} tickFormatter={(value: number) => new Intl.NumberFormat(undefined, { notation: "compact" }).format(value)} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} cursor={{ fill: "#f3f7f4" }} />
-                  <Bar dataKey="amount" fill="#548267" radius={[5, 5, 0, 0]} maxBarSize={44} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </article>
-
-        <article className="panel category-panel">
-          <div className="panel-heading">
-            <div><h2>Spending by category</h2><p>{monthLabel}</p></div>
-            <Link className="text-link" to="/expenses">View expenses</Link>
-          </div>
-          {categories.length === 0 ? (
-            <EmptyState title="Nothing recorded yet" description="Expenses you add for this month will appear here." />
-          ) : (
-            <div className="category-chart-area">
-              <div className="chart-wrap chart-donut">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={categories} dataKey="spent" nameKey="category" innerRadius={55} outerRadius={82} paddingAngle={3} stroke="none">
-                      {categories.map((item) => <Cell key={item.category} fill={chartColors[item.category]} />)}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="donut-center"><strong>{categories.length}</strong><span>categories</span></div>
-              </div>
-              <div className="category-legend">
-                {categories.slice(0, 5).map((item) => (
-                  <div className="legend-row" key={item.category}>
-                    <span className="legend-dot" style={{ background: chartColors[item.category] }} />
-                    <span>{CATEGORY_LABELS[item.category]}</span>
-                    <strong>{formatCurrency(item.spent, currency)}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </article>
-      </section>
+      <Suspense fallback={<LoadingState label="Loading spending charts…" />}>
+        <DashboardCharts
+          trendData={trendData}
+          trendLoading={trendQuery.isPending}
+          trendError={trendQuery.isError ? getApiErrorMessage(trendQuery.error) : null}
+          onRetryTrend={() => void trendQuery.refetch()}
+          categories={categories}
+          monthLabel={monthLabel}
+          currency={currency}
+        />
+      </Suspense>
 
       <section className="panel recent-panel">
         <div className="panel-heading">
@@ -245,7 +182,7 @@ export function DashboardPage() {
           <div className="recent-list">
             {recentQuery.data.results.slice(0, 5).map((expense) => (
               <div className="recent-row" key={expense.id}>
-                <span className={`category-avatar tone-${expense.category}`}>{CATEGORY_LABELS[expense.category].slice(0, 1)}</span>
+                <span className={`category-avatar tone-${expense.category}`}><CategoryIcon category={expense.category} /></span>
                 <div className="recent-description"><strong>{expense.description}</strong><span>{CATEGORY_LABELS[expense.category]} <i /> {new Date(`${expense.occurred_on}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span></div>
                 <strong className="recent-amount">{formatCurrency(expense.amount, expense.currency)}</strong>
               </div>

@@ -57,7 +57,7 @@ export function SettingsPage() {
       <section className="settings-card">
         <div className="settings-card-heading">
           <span className="settings-icon"><UserRound size={18} /></span>
-          <div><h2>Profile</h2><p>Your account details from Ledgerly.</p></div>
+          <div><h2>Profile</h2><p>Your account details from TallyDan.</p></div>
         </div>
         <div className="profile-grid">
           <div><span className="settings-label">Username</span><strong>{user?.username ?? "—"}</strong></div>

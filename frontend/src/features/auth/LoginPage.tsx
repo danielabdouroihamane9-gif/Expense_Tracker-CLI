@@ -47,7 +47,7 @@ export function LoginPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-brand"><span className="brand-mark">L</span><span className="brand-name">ledgerly<span>.</span></span></div>
+      <div className="auth-brand"><span className="brand-mark" aria-hidden="true">T</span><span className="brand-name">TallyDan<span>.</span></span></div>
       <div className="auth-layout">
         <section className="auth-story">
           <div className="story-kicker"><span className="story-dot" /> YOUR MONEY, IN FOCUS</div>
@@ -86,7 +86,7 @@ export function LoginPage() {
                 {isSubmitting ? "Signing in…" : "Sign in"}
               </Button>
             </form>
-            <p className="auth-switch">New to Ledgerly? <Link to="/register">Create an account</Link></p>
+            <p className="auth-switch">New to TallyDan? <Link to="/register">Create an account</Link></p>
           </div>
           <p className="auth-footnote">By continuing, you agree to keep your account credentials private.</p>
         </section>

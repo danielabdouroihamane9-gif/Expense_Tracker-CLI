@@ -29,6 +29,11 @@ describe("central API client authentication", () => {
     vi.restoreAllMocks()
   })
 
+  it("keeps local API requests relative so Vite handles the /api proxy", () => {
+    expect(api.defaults.baseURL).toBe("")
+    expect(api.getUri({ url: "/api/v1/expenses/" })).toBe("/api/v1/expenses/")
+  })
+
   it("attaches the session access token to protected requests", async () => {
     setAuthTokens({ access: "access-token", refresh: "refresh-token" })
     let seenAuthorization: string | undefined

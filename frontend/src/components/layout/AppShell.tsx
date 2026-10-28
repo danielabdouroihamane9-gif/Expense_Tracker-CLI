@@ -49,8 +49,8 @@ export function AppShell() {
       />
       <aside className={`sidebar${mobileOpen ? " sidebar-open" : ""}`}>
         <div className="brand-lockup">
-          <span className="brand-mark" aria-hidden="true">L</span>
-          <span className="brand-name">ledgerly<span>.</span></span>
+          <span className="brand-mark" aria-hidden="true">T</span>
+          <span className="brand-name">TallyDan<span>.</span></span>
           <button className="sidebar-close" aria-label="Close navigation" onClick={() => setMobileOpen(false)}>
             <X size={18} />
           </button>

@@ -21,6 +21,8 @@ dist/
 # Environment and local configuration
 .env
 *.env
+/frontend/.env.local
+/frontend/.env.*.local
 
 # Pytest cache
 .pytest_cache/

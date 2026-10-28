@@ -114,7 +114,7 @@ export function BudgetsPage() {
         <section className="panel budget-empty-panel">
           <EmptyState
             title="Give your spending a little structure"
-            description="Create a category budget and Ledgerly will show this month’s progress using your real expenses."
+            description="Create a category budget and TallyDan will show this month’s progress using your real expenses."
             action={<Button onClick={openCreate}><Plus size={16} /> Create a budget</Button>}
           />
         </section>
