@@ -1,4 +1,4 @@
-# **Welcome to my multi-tier Expense Tracker repository!** 
+# **Welcome to my multi-tier Expense Tracker repository!**
 
 This project showcases my journey from building low-level system tools to engineering production-ready, decoupled full-stack cloud applications.
 
@@ -27,7 +27,7 @@ TallyDan follows a **decoupled client-server architecture**:
 * **Backend:** A RESTful API built with **Django REST Framework (DRF)** handling business logic, user sessions, and database operations, hosted on **Render**.
 * **Database & Security:** Relational data management secured with environment-driven CORS policies and token-based authentication.
 
-```
+```text
 +-------------+      HTTPS / REST API       +------------------------+
 |   React     |  -------------------------> |      Django DRF        |
 |  (Vite SPA) | <-------------------------  |     (Render Server)    |
@@ -87,8 +87,6 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-
-
 #### 3. Set Up the Frontend
 
    Open a separate terminal window:
@@ -99,8 +97,6 @@ npm install
 npm run dev
 ```
 
-
-
 ## **Project 2: Expense Tracker CLI**
 
 A local command-line expense tracker built with Python. The project is the
@@ -110,20 +106,20 @@ domain behavior instead of rewriting it.
 
 ## Current capabilities
 
-- Add, edit, duplicate, inspect, search, filter, sort, and delete expenses.
-- Set category budgets and view monthly budget status.
-- Generate monthly, statistical, category, and top-category reports.
-- Import and export currency-aware CSV data.
-- Configure one application currency; the initial default is `USD`.
-- Store exact two-decimal monetary values, stable expense UUIDs, occurrence
+* Add, edit, duplicate, inspect, search, filter, sort, and delete expenses.
+* Set category budgets and view monthly budget status.
+* Generate monthly, statistical, category, and top-category reports.
+* Import and export currency-aware CSV data.
+* Configure one application currency; the initial default is `USD`.
+* Store exact two-decimal monetary values, stable expense UUIDs, occurrence
   dates, and UTC creation timestamps in versioned JSON documents.
-- Protect local data with validation, atomic replacement, backups, and recovery.
-- Run through explicit application composition and repository contracts.
+* Protect local data with validation, atomic replacement, backups, and recovery.
+* Run through explicit application composition and repository contracts.
 
 ## Requirements
 
-- Python 3.11, 3.12, 3.13, or 3.14
-- A terminal such as PowerShell
+* Python 3.11, 3.12, 3.13, or 3.14
+* A terminal such as PowerShell
 
 The Phase 1 CLI uses only the Python standard library at runtime. Test,
 coverage, and formatting tools are installed separately from
