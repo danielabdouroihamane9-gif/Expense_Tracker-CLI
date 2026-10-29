@@ -19,6 +19,16 @@ This project showcases my journey from building low-level system tools to engine
 
 ---
 
+## 📸 Application Preview
+
+![Login Screen](image/README/1793297744416.png)
+
+![Dashboard](image/README/1793297782948.png)
+
+![Create account](image/README/1793297798554.png)
+
+![Expenses Page](image/README/1793297807413.png)
+
 ## 🏛️ System Architecture
 
 TallyDan follows a **decoupled client-server architecture**:
